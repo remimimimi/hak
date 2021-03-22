@@ -1,3 +1,0 @@
-223 6557231 1616346058403226884 c601ec01fa8805977aeebbafbed5a493 /home/remi/Git/myrepos/romlin/kernel/src/arch/x86/linker.ld
-32980 6423602 1616369719294045876 11de5ca5e64ba5cbc21fb4a39c8284af /home/remi/Git/myrepos/romlin/kernel/zig-cache/o/0810bde03fd66fd30d53bdae8beaaf6c/kernel.o
-61878 6818978 1614668848620393496 f3982b9078b9da7ae9cecef94d844508 /home/remi/.cache/zig/o/a982f3e4688459f58437cd0e7f50ab9f/libcompiler_rt.a
