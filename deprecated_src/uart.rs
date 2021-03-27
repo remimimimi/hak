@@ -1,15 +1,14 @@
-// uart.rs
-// UART routines and driver
-
 use core::convert::TryInto;
 use core::fmt::Error;
 use core::fmt::Write;
 
-pub struct Uart {
+/// [UART]: https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter
+/// [UART] is Universal Asynchronous Receiver-Transmitter
+pub struct UartDriver {
     base_address: usize,
 }
 
-impl Write for Uart {
+impl Write for UartDriver {
     fn write_str(&mut self, out: &str) -> Result<(), Error> {
         for c in out.bytes() {
             self.put(c);
@@ -18,9 +17,9 @@ impl Write for Uart {
     }
 }
 
-impl Uart {
+impl UartDriver {
     pub fn new(base_address: usize) -> Self {
-        Uart { base_address }
+        UartDriver { base_address }
     }
 
     pub fn init(&mut self) {
@@ -32,10 +31,9 @@ impl Uart {
             // We can easily write the value 3 here or 0b11, but I'm
             // extending it so that it is clear we're setting two individual
             // fields
-            //             Word 0     Word 1
-            //             ~~~~~~     ~~~~~~
-            let lcr: u8 = (1 << 0) | (1 << 1);
-            ptr.add(3).write_volatile(lcr);
+            //                         Word 0     Word 1
+            //                         ~~~~~~     ~~~~~~
+            ptr.add(3).write_volatile((1 << 0) | (1 << 1));
 
             // Now, enable the FIFO, which is bit index 0 of the FIFO
             // control register (FCR at offset 2).
@@ -72,6 +70,7 @@ impl Uart {
             // To change what the base address points to, we open the "divisor latch" by writing 1 into
             // the Divisor Latch Access Bit (DLAB), which is bit index 7 of the Line Control Register (LCR)
             // which is at base_address + 3.
+            let lcr = ptr.add(3).read_volatile();
             ptr.add(3).write_volatile(lcr | 1 << 7);
 
             // Now, base addresses 0 and 1 point to DLL and DLM, respectively.
@@ -82,7 +81,7 @@ impl Uart {
             // Now that we've written the divisor, we never have to touch this again. In hardware, this
             // will divide the global clock (22.729 MHz) into one suitable for 2,400 signals per second.
             // So, to once again get access to the RBR/THR/IER registers, we need to close the DLAB bit
-            // by clearing it to 0.
+            // by clearing it to 0. Here, we just restore the original value of lcr.
             ptr.add(3).write_volatile(lcr);
         }
     }
