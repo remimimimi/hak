@@ -51,7 +51,7 @@ telling the linker script here that we have one pool of RAM.
 */
 MEMORY
 {
-  ram (wrx) : ORIGIN = 0x80000000, LENGTH = 128M
+  ram  (wxa) : ORIGIN = 0x80000000, LENGTH = 128M
 }
 
 /*
@@ -128,7 +128,6 @@ SECTIONS
 	  things in "special" text sections, so we match any we might come across here.
 	*/
     *(.text.init) *(.text .text.*)
-
 	/*
 	  Again, with PROVIDE, we're providing a readable symbol called _text_end, which is
 	  set to the memory address AFTER .text.init, .text, and .text.*'s have been added.
@@ -210,8 +209,6 @@ SECTIONS
     PROVIDE(_bss_end = .);
   } >ram AT>ram :bss
 
-  .eh_frame (INFO) : { KEEP(*(.eh_frame)) }
-
   /*
      The following will be helpful when we allocate the kernel stack (_stack) and
 	 determine where the heap begnis and ends (_heap_start and _heap_start + _heap_size)/
@@ -233,7 +230,7 @@ SECTIONS
 	 When we go to allocate from the stack, we'll subtract the number of bytes we need.
   */
   PROVIDE(_stack_start = _bss_end);
-  PROVIDE(_stack_end = _stack_start + 0x8000);
+  PROVIDE(_stack_end = _stack_start + 0x80000);
   PROVIDE(_memory_end = ORIGIN(ram) + LENGTH(ram));
 
   /* 
