@@ -66,7 +66,7 @@ pub fn set_threshold(tsh: u8) {
     // We do tsh because we're using a u8, but our maximum number
     // is a 3-bit 0b111. So, we and with 7 (0b111) to just get the
     // last three bits.
-    let actual_tsh = tsh & 7;
+    let actual_tsh = tsh & 0b111;
     let tsh_reg = PLIC_THRESHOLD as *mut u32;
     unsafe {
         tsh_reg.write_volatile(actual_tsh as u32);
