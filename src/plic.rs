@@ -25,7 +25,6 @@ const PLIC_CLAIM: usize = 0x0c20_0004;
 // UART0 = 10
 // PCIE = [32..35]
 
-
 /// Get the next available interrupt. This is the "claim" process.
 /// The plic will automatically sort by priority and hand us the
 /// ID of the interrupt. For example, if the UART is interrupting
@@ -41,8 +40,7 @@ pub fn next() -> Option<u32> {
         // The interrupt 0 is hardwired to 0, which tells us that there is no
         // interrupt to claim, hence we return None.
         None
-    }
-    else {
+    } else {
         // If we get here, we've gotten a non-0 interrupt.
         Some(claim_no)
     }
@@ -121,8 +119,9 @@ pub fn handle_interrupt() {
         match interrupt {
             1..=8 => {
                 virtio::handle_interrupt(interrupt);
-            },
-            10 => { // Interrupt 10 is the UART interrupt.
+            }
+            10 => {
+                // Interrupt 10 is the UART interrupt.
                 // We would typically set this to be handled out of the interrupt context,
                 // but we're testing here! C'mon!
                 // We haven't yet used the singleton pattern for my_uart, but remember, this
@@ -139,18 +138,17 @@ pub fn handle_interrupt() {
                             // essentially have to write a space and
                             // backup again:
                             print!("{} {}", 8 as char, 8 as char);
-                        },
+                        }
                         10 | 13 => {
                             // Newline or carriage-return
                             println!();
-                        },
+                        }
                         _ => {
                             print!("{}", c as char);
-                        },
+                        }
                     }
                 }
-        
-            },
+            }
             _ => {
                 println!("Unknown external interrupt: {}", interrupt);
             }
