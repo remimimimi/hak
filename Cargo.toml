@@ -1,10 +1,8 @@
 [package]
-name = "sos"
+name = "romlin-kernel"
 version = "0.1.0"
-authors = ["Stephen Marz <stephen.marz@utk.edu>"]
+authors = ["rrremiii <valent.xarin@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.dev]
 opt-level = 0
