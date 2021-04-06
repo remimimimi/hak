@@ -1,4 +1,4 @@
-CROSS=riscv64-unknown-linux-gnu-
+CROSS=riscv64-linux-gnu-
 CXX=g++
 OBJCOPY=objcopy
 AR=ar
