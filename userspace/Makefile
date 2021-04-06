@@ -1,4 +1,4 @@
-CROSS=riscv64-unknown-elf-
+CROSS=riscv64-elf-
 CXX=g++
 CXXFLAGS=-Wall -O3 -static -I.
 SOURCES=$(wildcard *.cpp)

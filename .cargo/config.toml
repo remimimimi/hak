@@ -7,7 +7,5 @@ runner = "qemu-system-riscv64 -machine virt -cpu rv64 -smp 4 -m 128M -drive if=n
 # runner = "qemu-system-riscv64 -machine virt -cpu rv64 -d guest_errors,unimp -smp 4 -m 128M -drive if=none,format=raw,file=hdd.dsk,id=foo -device virtio-blk-device,scsi=off,drive=foo -serial mon:stdio -bios none -device virtio-rng-device -device virtio-gpu-device -device virtio-net-device -device virtio-tablet-device -device virtio-keyboard-device -kernel "
 
 rustflags = [
-	# "-C", "linker=riscv64-elf-g++",
     "-C", "link-arg=-Tsrc/lds/virt.lds",
-    # "-C", "link-arg=--gc-sections",
 ]
