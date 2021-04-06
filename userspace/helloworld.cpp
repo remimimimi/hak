@@ -1,5 +1,4 @@
-#include <cstdio>
-#include <cmath>
+#include <printf.h>
 
 const int SIZE = 100000;
 double myarray[SIZE];
@@ -13,8 +12,8 @@ int main()
 	for (int i = 0;i < SIZE;i++) {
 		myarray[i] = another_array[i % 5];
 	}
-	for (int i = 0;i < SIZE;i++) {
-		myarray[i % SIZE] += cos(i);
+	for (int i = 0;i < 100000000;i++) {
+		myarray[i % SIZE] += 12.34;
 	}
 	printf("Ok, I'm done crunching. Wanna see myarray[0]? It's %lf\n", myarray[0]);
 	return 0;

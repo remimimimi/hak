@@ -1,15 +1,10 @@
-#include <cstdio>
-#include <unistd.h>
+#include <printf.h>
+#include <syscall.h>
+
 int main()
 {
-	printf("Started shell.\n");
-	char data[100];
-	while (1) {
-		printf("Enter value: ");
-		int r = read(0, data, 100);
-		if (r > 0) {
-			printf("Got %s\n", data);
-		}
-	}
+	unsigned long a;
+	asm volatile("mv %0, sp\n" : "=r"(a));	
+	printf("Stack is at %p\n", a);
 	return 0;
 }
