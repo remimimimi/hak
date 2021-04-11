@@ -273,58 +273,58 @@ pub fn probe() {
                 // DeviceID 1 is a network device
                 1 => {
                     print!("network device...");
-                    if false == setup_network_device(ptr) {
-                        println!("setup failed.");
-                    } else {
+                    if setup_network_device(ptr) {
                         println!("setup succeeded!");
+                    } else {
+                        println!("setup failed.");
                     }
                 }
                 // DeviceID 2 is a block device
                 2 => {
                     print!("block device...");
-                    if false == setup_block_device(ptr) {
-                        println!("setup failed.");
-                    } else {
+                    if setup_block_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Block));
                         }
                         println!("setup succeeded!");
+                    } else {
+                        println!("setup failed.");
                     }
                 }
                 // DeviceID 4 is a random number generator device
                 4 => {
                     print!("entropy device...");
-                    if false == setup_entropy_device(ptr) {
-                        println!("setup failed.");
-                    } else {
+                    if setup_entropy_device(ptr) {
                         println!("setup succeeded!");
+                    } else {
+                        println!("setup failed.");
                     }
                 }
                 // DeviceID 16 is a GPU device
                 16 => {
                     print!("GPU device...");
-                    if false == setup_gpu_device(ptr) {
-                        println!("setup failed.");
-                    } else {
+                    if setup_gpu_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Gpu));
                         }
                         println!("setup succeeded!");
+                    } else {
+                        println!("setup failed.");
                     }
                 }
                 // DeviceID 18 is an input device
                 18 => {
                     print!("input device...");
-                    if false == setup_input_device(ptr) {
-                        println!("setup failed.");
-                    } else {
+                    if setup_input_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Input));
                         }
                         println!("setup succeeded!");
+                    } else {
+                        println!("setup failed.");
                     }
                 }
                 _ => println!("unknown device type."),

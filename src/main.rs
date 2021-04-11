@@ -1,6 +1,3 @@
-// Steve Operating System
-// Stephen Marz
-// 21 Sep 2019
 #![no_main]
 #![no_std]
 #![feature(
@@ -14,6 +11,14 @@
     const_raw_ptr_to_usize_cast,
     lang_items
 )]
+// #![warn(clippy::all)]
+// #![warn(clippy::correctness)]
+// #![warn(clippy::style)]
+// #![warn(clippy::restriction)]
+// #![warn(clippy::perf)]
+// #![warm(clippy::nursery)]
+// #![warn(clippy::pedantic)]
+// #![warm(clippy::cargo)]
 
 #[lang = "eh_personality"]
 extern "C" fn eh_personality() {}
@@ -27,25 +32,23 @@ extern crate alloc;
 // / RUST MACROS
 // ///////////////////////////////////
 #[macro_export]
-macro_rules! print
-{
-	($($args:tt)+) => ({
-			use core::fmt::Write;
-			let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
-			});
+macro_rules! print {
+    ($($args:tt)+) => ({
+            use core::fmt::Write;
+            let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
+            });
 }
 #[macro_export]
-macro_rules! println
-{
-	() => ({
-		   print!("\r\n")
-		   });
-	($fmt:expr) => ({
-			print!(concat!($fmt, "\r\n"))
-			});
-	($fmt:expr, $($args:tt)+) => ({
-			print!(concat!($fmt, "\r\n"), $($args)+)
-			});
+macro_rules! println {
+    () => ({
+           print!("\r\n")
+           });
+    ($fmt:expr) => ({
+            print!(concat!($fmt, "\r\n"))
+            });
+    ($fmt:expr, $($args:tt)+) => ({
+            print!(concat!($fmt, "\r\n"), $($args)+)
+            });
 }
 
 // ///////////////////////////////////
@@ -83,7 +86,7 @@ extern "C" {
 /// Switch to user is an assembly function that loads
 /// a frame. Since it will jump to another program counter,
 /// it will never return back here. We don't care if we leak
-/// the stack, since we will recapture the stack during m_trap.
+/// the stack, since we will recapture the stack during `m_trap`.
 fn rust_switch_to_user(frame: usize) -> ! {
     unsafe {
         switch_to_user(frame);

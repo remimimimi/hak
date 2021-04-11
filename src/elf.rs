@@ -142,7 +142,7 @@ impl File {
             return Err(elf_fl.err().unwrap());
         }
         let elf_fl = elf_fl.ok().unwrap();
-        let mut sz = 0usize;
+        let mut sz = 0_usize;
         // Get the size, in memory, that we're going to need for the program storage.
         for p in elf_fl.programs.iter() {
             sz += p.header.memsz;
@@ -174,7 +174,7 @@ impl File {
         // .rodata, .data, and .bss sections, but not necessarily.
         // What we do here is map the program headers into the process' page
         // table.
-        for p in elf_fl.programs.iter() {
+        for p in &elf_fl.programs {
             // The program header table starts where the ELF header says it is
             // given by the field phoff (program header offset).
             // Copy the buffer we got from the filesystem into the program
@@ -218,11 +218,11 @@ impl File {
         // Map the stack
         let ptr = my_proc.stack as *mut u8;
         for i in 0..STACK_PAGES {
-            let vaddr = STACK_ADDR + i * PAGE_SIZE;
-            let paddr = ptr as usize + i * PAGE_SIZE;
+            let v_addr = STACK_ADDR + i * PAGE_SIZE;
+            let p_addr = ptr as usize + i * PAGE_SIZE;
             // We create the stack. We don't load a stack from the disk.
             // This is why I don't need to make the stack executable.
-            map(table, vaddr, paddr, EntryBits::UserReadWrite.val(), 0);
+            map(table, v_addr, p_addr, EntryBits::UserReadWrite.val(), 0);
         }
         // Set everything up in the trap frame
         unsafe {

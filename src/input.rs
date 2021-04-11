@@ -34,7 +34,7 @@ pub struct Event {
 #[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum ConfigSelect {
-    UNSET = 0x00,
+    Unset = 0x00,
     IdName = 0x01,
     IdSerial = 0x02,
     IdDevids = 0x03,
@@ -152,7 +152,7 @@ pub fn setup_input_device(ptr: *mut u32) -> bool {
         // that means that the device couldn't accept
         // the features that we request. Therefore, this is
         // considered a "failed" state.
-        if false == StatusField::features_ok(status_ok) {
+        if !StatusField::features_ok(status_ok) {
             print!("features fail...");
             ptr.add(MmioOffsets::Status.scale32())
                 .write_volatile(StatusField::Failed.val32());
@@ -271,10 +271,10 @@ fn pending(dev: &mut Device) {
     // given by the descriptor id.
     unsafe {
         // Check the event queue first
-        let ref queue = *dev.event_queue;
+        let queue = &(*dev.event_queue);
         while dev.event_ack_used_idx != queue.used.idx {
-            let ref elem = queue.used.ring[dev.event_ack_used_idx as usize % VIRTIO_RING_SIZE];
-            let ref desc = queue.desc[elem.id as usize];
+            let elem = &queue.used.ring[dev.event_ack_used_idx as usize % VIRTIO_RING_SIZE];
+            let desc = &queue.desc[elem.id as usize];
             let event = (desc.addr as *const Event).as_ref().unwrap();
             // print!("EAck {}, elem {}, len {}, addr 0x{:08x}: ", dev.event_ack_used_idx, elem.id, elem.len, desc.addr as usize);
             // println!("Type = {:x}, Code = {:x}, Value = {:x}", event.event_type, event.code, event.value);
@@ -295,14 +295,14 @@ fn pending(dev: &mut Device) {
             }
         }
         // Next, the status queue
-        let ref queue = *dev.status_queue;
+        let queue = &(*dev.status_queue);
         while dev.status_ack_used_idx != queue.used.idx {
-            let ref elem = queue.used.ring[dev.status_ack_used_idx as usize % VIRTIO_RING_SIZE];
+            let elem = &queue.used.ring[dev.status_ack_used_idx as usize % VIRTIO_RING_SIZE];
             print!(
                 "SAck {}, elem {}, len {}: ",
                 dev.status_ack_used_idx, elem.id, elem.len
             );
-            let ref desc = queue.desc[elem.id as usize];
+            let desc = &queue.desc[elem.id as usize];
             let event = (desc.addr as *const Event).as_ref().unwrap();
             println!(
                 "Type = {:x}, Code = {:x}, Value = {:x}",

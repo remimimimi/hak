@@ -645,7 +645,7 @@ pub fn setup_gpu_device(ptr: *mut u32) -> bool {
         // that means that the device couldn't accept
         // the features that we request. Therefore, this is
         // considered a "failed" state.
-        if false == StatusField::features_ok(status_ok) {
+        if !StatusField::features_ok(status_ok) {
             print!("features fail...");
             ptr.add(MmioOffsets::Status.scale32())
                 .write_volatile(StatusField::Failed.val32());
@@ -726,11 +726,11 @@ pub fn pending(dev: &mut Device) {
     // Here we need to check the used ring and then free the resources
     // given by the descriptor id.
     unsafe {
-        let ref queue = *dev.queue;
+        let queue = &(*dev.queue);
         while dev.ack_used_idx != queue.used.idx {
-            let ref elem = queue.used.ring[dev.ack_used_idx as usize % VIRTIO_RING_SIZE];
+            let elem = &queue.used.ring[dev.ack_used_idx as usize % VIRTIO_RING_SIZE];
             // println!("Ack {}, elem {}, len {}", dev.ack_used_idx, elem.id, elem.len);
-            let ref desc = queue.desc[elem.id as usize];
+            let desc = &queue.desc[elem.id as usize];
             // Requests stay resident on the heap until this
             // function, so we can recapture the address here
             kfree(desc.addr as *mut u8);

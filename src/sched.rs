@@ -12,7 +12,7 @@ pub fn schedule() -> usize {
         // If we can't get the lock, then usually this means a kernel
         // process has the lock. So, we return 0. This has a special
         // meaning to whomever calls the scheduler to say "nobody else got scheduled"
-        if PROCESS_LIST_MUTEX.try_lock() == false {
+        if !PROCESS_LIST_MUTEX.try_lock() {
             return 0;
         }
         if let Some(mut pl) = PROCESS_LIST.take() {

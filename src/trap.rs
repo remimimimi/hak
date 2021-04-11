@@ -28,13 +28,7 @@ extern "C" fn m_trap(
     // We're going to handle all traps in machine mode. RISC-V lets
     // us delegate to supervisor mode, but switching out SATP (virtual memory)
     // gets hairy.
-    let is_async = {
-        if cause >> 63 & 1 == 1 {
-            true
-        } else {
-            false
-        }
-    };
+    let is_async = cause >> 63 & 1 == 1;
     // The cause contains the type of trap (sync, async) as well as the cause
     // number. So, here we narrow down just the cause number.
     let cause_num = cause & 0xfff;
@@ -160,7 +154,7 @@ extern "C" fn m_trap(
     return_pc
 }
 
-pub const MMIO_MTIMECMP: *mut u64 = 0x0200_4000usize as *mut u64;
+pub const MMIO_MTIMECMP: *mut u64 = 0x0200_4000_usize as *mut u64;
 pub const MMIO_MTIME: *const u64 = 0x0200_BFF8 as *const u64;
 
 pub fn schedule_next_context_switch(qm: u16) {

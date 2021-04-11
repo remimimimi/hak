@@ -120,12 +120,12 @@ pub struct TrapFrame {
 
 /// Rust requires that we initialize our structures
 /// because of the move semantics. What'll happen below
-/// is Rust will construct a new TrapFrame and move it
-/// out of the zero() function below. Rust contains two
+/// is Rust will construct a new `TrapFrame` and move it
+/// out of the `zero()` function below. Rust contains two
 /// different "selfs" where self can refer to the object
 /// in memory or Self (capital S) which refers to the
 /// data type of the structure. In the case below, this
-/// is TrapFrame.
+/// is `TrapFrame`.
 impl TrapFrame {
     pub const fn new() -> Self {
         TrapFrame {

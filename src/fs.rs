@@ -1,8 +1,3 @@
-// minixfs.rs
-// Minix 3 Filesystem Implementation
-// Stephen Marz
-// 16 March 2020
-
 use crate::{
     cpu::Registers,
     process::{add_kernel_process_args, get_by_pid, set_running, set_waiting},
@@ -59,7 +54,7 @@ pub struct Inode {
 
 /// Notice that an inode does not contain the name of a file. This is because
 /// more than one file name may refer to the same inode. These are called "hard links"
-/// Instead, a DirEntry essentially associates a file name with an inode as shown in
+/// Instead, a `DirEntry` essentially associates a file name with an inode as shown in
 /// the structure below.
 #[repr(C)]
 pub struct DirEntry {
@@ -67,7 +62,7 @@ pub struct DirEntry {
     pub name: [u8; 60],
 }
 
-/// The MinixFileSystem implements the FileSystem trait for the VFS.
+/// The `MinixFileSystem` implements the `FileSystem` trait for the VFS.
 pub struct MinixFileSystem;
 // The plan for this in the future is to have a single inode cache. What we
 // will do is have a cache of Node structures which will combine the Inode
@@ -132,7 +127,7 @@ impl MinixFileSystem {
 impl MinixFileSystem {
     /// Init is where we would cache the superblock and inode to avoid having to read
     /// it over and over again, like we do for read right now.
-    fn cache_at(btm: &mut BTreeMap<String, Inode>, cwd: &String, inode_num: u32, bdev: usize) {
+    fn cache_at(btm: &mut BTreeMap<String, Inode>, cwd: &str, inode_num: u32, bdev: usize) {
         let ino = Self::get_inode(bdev, inode_num).unwrap();
         let mut buf = Buffer::new(((ino.size + BLOCK_SIZE - 1) & !BLOCK_SIZE) as usize);
         let dirents = buf.get() as *const DirEntry;
@@ -141,6 +136,7 @@ impl MinixFileSystem {
         // We start at 2 because the first two entries are . and ..
         for i in 2..num_dirents {
             unsafe {
+                // let d = &*dirents.add(i);
                 let ref d = *dirents.add(i);
                 let d_ino = Self::get_inode(bdev, d.inode).unwrap();
                 let mut new_cwd = String::with_capacity(120);
@@ -160,12 +156,12 @@ impl MinixFileSystem {
                     new_cwd.push(d.name[i] as char);
                 }
                 new_cwd.shrink_to_fit();
-                if d_ino.mode & S_IFDIR != 0 {
+                if d_ino.mode & S_IFDIR == 0 {
+                    btm.insert(new_cwd, d_ino);
+                } else {
                     // This is a directory, cache these. This is a recursive call,
                     // which I don't really like.
                     Self::cache_at(btm, &new_cwd, d.inode, bdev);
-                } else {
-                    btm.insert(new_cwd, d_ino);
                 }
             }
         }
@@ -194,7 +190,21 @@ impl MinixFileSystem {
     /// in RAM, it might make this much quicker. For now, this doesn't do anything since
     /// we're just testing read based on if we know the Inode we're looking for.
     pub fn open(bdev: usize, path: &str) -> Result<Inode, FsError> {
-        if let Some(cache) = unsafe { MFS_INODE_CACHE[bdev - 1].take() } {
+        // if let Some(cache) = unsafe { MFS_INODE_CACHE[bdev - 1].take() } {
+        //     let ret;
+        //     if let Some(inode) = cache.get(path) {
+        //         ret = Ok(*inode);
+        //     } else {
+        //         ret = Err(FsError::FileNotFound);
+        //     }
+        //     unsafe {
+        //         MFS_INODE_CACHE[bdev - 1].replace(cache);
+        //     }
+        //     ret
+        // } else {
+        //     Err(FsError::FileNotFound)
+        // }
+        unsafe { MFS_INODE_CACHE[bdev - 1].take() }.map_or(Err(FsError::FileNotFound), |cache| {
             let ret;
             if let Some(inode) = cache.get(path) {
                 ret = Ok(*inode);
@@ -205,23 +215,21 @@ impl MinixFileSystem {
                 MFS_INODE_CACHE[bdev - 1].replace(cache);
             }
             ret
-        } else {
-            Err(FsError::FileNotFound)
-        }
+        })
     }
 
     pub fn read(bdev: usize, inode: &Inode, buffer: *mut u8, size: u32, offset: u32) -> u32 {
         // Our strategy here is to use blocks to see when we need to start reading
         // based on the offset. That's offset_block. Then, the actual byte within
         // that block that we need is offset_byte.
-        let mut blocks_seen = 0u32;
+        let mut blocks_seen = 0_u32;
         let offset_block = offset / BLOCK_SIZE;
         let mut offset_byte = offset % BLOCK_SIZE;
         // First, the _size parameter (now in bytes_left) is the size of the buffer, not
         // necessarily the size of the file. If our buffer is bigger than the file, we're OK.
         // If our buffer is smaller than the file, then we can only read up to the buffer size.
         let mut bytes_left = if size > inode.size { inode.size } else { size };
-        let mut bytes_read = 0u32;
+        let mut bytes_read = 0_u32;
         // The block buffer automatically drops when we quit early due to an error or we've read enough. This will be the holding port when we go out and read a block. Recall that even if we want 10 bytes, we have to read the entire block (really only 512 bytes of the block) first. So, we use the block_buffer as the middle man, which is then copied into the buffer.
         let mut block_buffer = Buffer::new(BLOCK_SIZE as usize);
         // Triply indirect zones point to a block of pointers (BLOCK_SIZE / 4). Each one of those pointers points to another block of pointers (BLOCK_SIZE / 4). Each one of those pointers yet again points to another block of pointers (BLOCK_SIZE / 4). This is why we have indirect, iindirect (doubly), and iiindirect (triply).

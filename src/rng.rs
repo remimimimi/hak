@@ -68,7 +68,7 @@ pub fn setup_entropy_device(ptr: *mut u32) -> bool {
         // that means that the device couldn't accept
         // the features that we request. Therefore, this is
         // considered a "failed" state.
-        if false == StatusField::features_ok(status_ok) {
+        if !StatusField::features_ok(status_ok) {
             print!("features fail...");
             ptr.add(MmioOffsets::Status.scale32())
                 .write_volatile(StatusField::Failed.val32());
@@ -138,21 +138,32 @@ pub fn setup_entropy_device(ptr: *mut u32) -> bool {
 
 pub fn get_random() -> u64 {
     unsafe {
-        for i in ENTROPY_DEVICES.iter() {
-            if let Some(_edev) = i {
-                let ptr = kmalloc(8);
-                let _desc = Descriptor {
-                    addr: ptr as u64,
-                    len: 8,
-                    flags: virtio::VIRTIO_DESC_F_WRITE,
-                    next: 0,
-                };
-                let _val = *ptr as u64;
-                kfree(ptr);
-                break;
-            }
+        // for i in ENTROPY_DEVICES.iter() {
+        //     if let Some(_edev) = i {
+        //         let ptr = kmalloc(8);
+        //         let _desc = Descriptor {
+        //             addr: ptr as u64,
+        //             len: 8,
+        //             flags: virtio::VIRTIO_DESC_F_WRITE,
+        //             next: 0,
+        //         };
+        //         let _val = *ptr as u64;
+        //         kfree(ptr);
+        //         break;
+        //     }
+        // }
+        if ENTROPY_DEVICES.iter().any(Option::is_some) {
+            let ptr = kmalloc(8);
+            let _desc = Descriptor {
+                addr: ptr as u64,
+                len: 8,
+                flags: virtio::VIRTIO_DESC_F_WRITE,
+                next: 0,
+            };
+            let _val = *ptr as u64;
+            kfree(ptr);
         }
     }
 
-    0u64.wrapping_sub(1)
+    0_u64.wrapping_sub(1)
 }

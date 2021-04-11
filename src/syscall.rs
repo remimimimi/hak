@@ -1,8 +1,3 @@
-// syscall.rs
-// System calls
-// Stephen Marz
-// 3 Jan 2020
-
 use crate::{
     block::block_op,
     buffer::Buffer,
@@ -17,11 +12,11 @@ use crate::{
 };
 use alloc::{boxed::Box, string::String};
 
-/// do_syscall is called from trap.rs to invoke a system call. No discernment is
+/// `do_syscall`, is called from trap.rs to invoke a system call. No discernment is
 /// made here whether this is a U-mode, S-mode, or M-mode system call.
 /// Since we can't do anything unless we dereference the passed pointer,
 /// I went ahead and made the entire function unsafe.
-/// If we return 0 from this function, the m_trap function will schedule
+/// If we return 0 from this function, the `m_trap` function will schedule
 /// the next process--consider this a yield. A non-0 is the program counter
 /// we want to go back to.
 pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
@@ -89,13 +84,13 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 add_kernel_process_args(exec_func, Box::into_raw(inode_heap) as usize);
                 // This deletes us, which is what we want.
                 delete_process((*frame).pid as u16);
-                return 0;
+                0
             } else {
                 // If we get here, the path couldn't be found, or for some reason
                 // open failed. So, we return -1 and move on.
                 println!("Could not open path '{}'.", path);
-                (*frame).regs[Registers::A0 as usize] = -1isize as usize;
-                return mepc + 4;
+                (*frame).regs[Registers::A0 as usize] = -1_isize as usize;
+                mepc + 4
             }
         }
         63 => {
@@ -120,7 +115,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
                 let paddr = virt_to_phys(table, (*frame).regs[12]);
                 if paddr.is_none() {
-                    (*frame).regs[Registers::A0 as usize] = -1isize as usize;
+                    (*frame).regs[Registers::A0 as usize] = -1_isize as usize;
                     return 0;
                 }
                 physical_buffer = paddr.unwrap();
@@ -230,7 +225,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             // wait for abs events
             let mut ev = ABS_EVENTS.take().unwrap();
             let max_events = (*frame).regs[Registers::A1 as usize];
-            let vaddr = (*frame).regs[Registers::A0 as usize] as *const Event;
+            let v_addr = (*frame).regs[Registers::A0 as usize] as *const Event;
             if (*frame).satp >> 60 != 0 {
                 let process = get_by_pid((*frame).pid as u16);
                 let table = ((*process).get_table_address() as *mut Table)
@@ -242,12 +237,12 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 } else {
                     ev.len()
                 } {
-                    let paddr = virt_to_phys(table, vaddr.add(i) as usize);
+                    let paddr = virt_to_phys(table, v_addr.add(i) as usize);
                     if paddr.is_none() {
                         break;
                     }
-                    let paddr = paddr.unwrap() as *mut Event;
-                    *paddr = ev.pop_front().unwrap();
+                    let p_addr = paddr.unwrap() as *mut Event;
+                    *p_addr = ev.pop_front().unwrap();
                     (*frame).regs[Registers::A0 as usize] += 1;
                 }
             }

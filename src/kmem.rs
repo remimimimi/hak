@@ -130,11 +130,10 @@ pub fn kmalloc(sz: usize) -> *mut u8 {
                     (*head).set_size(chunk_size);
                 }
                 return head.add(1) as *mut u8;
-            } else {
-                // If we get here, what we saw wasn't a free
-                // chunk, move on to the next.
-                head = (head as *mut u8).add((*head).get_size()) as *mut AllocList;
             }
+            // If we get here, what we saw wasn't a free
+            // chunk, move on to the next.
+            head = (head as *mut u8).add((*head).get_size()) as *mut AllocList;
         }
     }
     // If we get here, we didn't find any free chunks--i.e. there isn't
@@ -246,7 +245,7 @@ unsafe impl GlobalAlloc for OsGlobalAlloc {
 static GA: OsGlobalAlloc = OsGlobalAlloc {};
 
 #[alloc_error_handler]
-/// If for some reason alloc() in the global allocator gets null_mut(),
+/// If for some reason alloc() in the global allocator gets `null_mut()`,
 /// then we come here. This is a divergent function, so we call panic to
 /// let the tester know what's going on.
 pub fn alloc_error(l: Layout) -> ! {

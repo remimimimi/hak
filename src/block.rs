@@ -184,7 +184,7 @@ pub fn setup_block_device(ptr: *mut u32) -> bool {
         // that means that the device couldn't accept
         // the features that we request. Therefore, this is
         // considered a "failed" state.
-        if false == StatusField::features_ok(status_ok) {
+        if !StatusField::features_ok(status_ok) {
             print!("features fail...");
             ptr.add(MmioOffsets::Status.scale32())
                 .write_volatile(StatusField::Failed.val32());
@@ -332,10 +332,10 @@ pub fn block_op(
                 addr: buffer as u64,
                 len: size,
                 flags: virtio::VIRTIO_DESC_F_NEXT
-                    | if !write {
-                        virtio::VIRTIO_DESC_F_WRITE
-                    } else {
+                    | if write {
                         0
+                    } else {
+                        virtio::VIRTIO_DESC_F_WRITE
                     },
                 next: 0,
             };
@@ -377,9 +377,9 @@ pub fn pending(bd: &mut BlockDevice) {
     // Here we need to check the used ring and then free the resources
     // given by the descriptor id.
     unsafe {
-        let ref queue = *bd.queue;
+        let queue = &(*bd.queue);
         while bd.ack_used_idx != queue.used.idx {
-            let ref elem = queue.used.ring[bd.ack_used_idx as usize % VIRTIO_RING_SIZE];
+            let elem = &queue.used.ring[bd.ack_used_idx as usize % VIRTIO_RING_SIZE];
             bd.ack_used_idx = bd.ack_used_idx.wrapping_add(1);
             // Requests stay resident on the heap until this
             // function, so we can recapture the address here

@@ -54,7 +54,7 @@ pub fn set_running(pid: u16) -> bool {
     let mut retval = false;
     unsafe {
         if let Some(mut pl) = PROCESS_LIST.take() {
-            for proc in pl.iter_mut() {
+            for proc in &mut pl {
                 if proc.pid == pid {
                     proc.set_state(ProcessState::Running);
                     retval = true;
@@ -102,7 +102,7 @@ pub fn set_sleeping(pid: u16, duration: usize) -> bool {
     let mut retval = false;
     unsafe {
         if let Some(mut pl) = PROCESS_LIST.take() {
-            for proc in pl.iter_mut() {
+            for proc in &mut pl {
                 if proc.pid == pid {
                     proc.set_state(ProcessState::Sleeping);
                     proc.set_sleep_until(get_mtime() + duration);
@@ -146,7 +146,7 @@ pub fn delete_process(pid: u16) {
 pub unsafe fn get_by_pid(pid: u16) -> *mut Process {
     let mut ret = null_mut();
     if let Some(mut pl) = PROCESS_LIST.take() {
-        for i in pl.iter_mut() {
+        for i in &mut pl {
             if i.get_pid() == pid {
                 ret = i as *mut Process;
                 break;
@@ -183,7 +183,7 @@ fn init_process() {
 }
 
 /// Add a process given a function address and then
-/// push it onto the LinkedList. Uses Process::new_default
+/// push it onto the `LinkedList`. Uses `Process::new_default`
 /// to create a new stack, etc.
 pub fn add_process_default(pr: fn()) {
     unsafe {
@@ -227,11 +227,11 @@ pub fn add_kernel_process(func: fn()) -> u16 {
     // .take() will replace PROCESS_LIST with None and give
     // us the only copy of the Deque.
     let func_addr = func as usize;
-    let func_vaddr = func_addr; //- 0x6000_0000;
-                                // println!("func_addr = {:x} -> {:x}", func_addr, func_vaddr);
-                                // We will convert NEXT_PID below into an atomic increment when
-                                // we start getting into multi-hart processing. For now, we want
-                                // a process. Get it to work, then improve it!
+    let func_v_addr = func_addr; //- 0x6000_0000;
+                                 // println!("func_addr = {:x} -> {:x}", func_addr, func_vaddr);
+                                 // We will convert NEXT_PID below into an atomic increment when
+                                 // we start getting into multi-hart processing. For now, we want
+                                 // a process. Get it to work, then improve it!
     let my_pid = unsafe { NEXT_PID };
     let mut ret_proc = Process {
         frame: zalloc(1) as *mut TrapFrame,
@@ -255,7 +255,7 @@ pub fn add_kernel_process(func: fn()) -> u16 {
     // We also need to set the stack adjustment so that it is at the
     // bottom of the memory and far away from heap allocations.
     unsafe {
-        (*ret_proc.frame).pc = func_vaddr;
+        (*ret_proc.frame).pc = func_v_addr;
         // 1 is the return address register. This makes it so we
         // don't have to do syscall_exit() when a kernel process
         // finishes.
@@ -266,25 +266,28 @@ pub fn add_kernel_process(func: fn()) -> u16 {
         (*ret_proc.frame).pid = ret_proc.pid as usize;
     }
 
-    if let Some(mut pl) = unsafe { PROCESS_LIST.take() } {
-        pl.push_back(ret_proc);
-        // Now, we no longer need the owned Deque, so we hand it
-        // back by replacing the PROCESS_LIST's None with the
-        // Some(pl).
-        unsafe {
-            PROCESS_LIST.replace(pl);
-        }
-        my_pid
-    } else {
-        unsafe {
-            PROCESS_LIST_MUTEX.unlock();
-        }
-        // TODO: When we get to multi-hart processing, we need to keep
-        // trying to grab the process list. We can do this with an
-        // atomic instruction. but right now, we're a single-processor
-        // computer.
-        0
-    }
+    unsafe { PROCESS_LIST.take() }.map_or_else(
+        || {
+            unsafe {
+                PROCESS_LIST_MUTEX.unlock();
+            }
+            // TODO: When we get to multi-hart processing, we need to keep
+            // trying to grab the process list. We can do this with an
+            // atomic instruction. but right now, we're a single-processor
+            // computer.
+            0
+        },
+        |mut pl| {
+            pl.push_back(ret_proc);
+            // Now, we no longer need the owned Deque, so we hand it
+            // back by replacing the PROCESS_LIST's None with the
+            // Some(pl).
+            unsafe {
+                PROCESS_LIST.replace(pl);
+            }
+            my_pid
+        },
+    )
 }
 
 /// A kernel process is just a function inside of the kernel. Each
@@ -296,7 +299,7 @@ fn ra_delete_proc() {
     syscall_exit();
 }
 
-/// This is the same as the add_kernel_process function, except you can pass
+/// This is the same as the `add_kernel_process` function, except you can pass
 /// arguments. Typically, this will be a memory address on the heap where
 /// arguments can be found.
 pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
@@ -315,11 +318,11 @@ pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
         // .take() will replace PROCESS_LIST with None and give
         // us the only copy of the Deque.
         let func_addr = func as usize;
-        let func_vaddr = func_addr; //- 0x6000_0000;
-                                    // println!("func_addr = {:x} -> {:x}", func_addr, func_vaddr);
-                                    // We will convert NEXT_PID below into an atomic increment when
-                                    // we start getting into multi-hart processing. For now, we want
-                                    // a process. Get it to work, then improve it!
+        let func_v_addr = func_addr; //- 0x6000_0000;
+                                     // println!("func_addr = {:x} -> {:x}", func_addr, func_vaddr);
+                                     // We will convert NEXT_PID below into an atomic increment when
+                                     // we start getting into multi-hart processing. For now, we want
+                                     // a process. Get it to work, then improve it!
         let my_pid = unsafe { NEXT_PID };
         let mut ret_proc = Process {
             frame: zalloc(1) as *mut TrapFrame,
@@ -343,7 +346,7 @@ pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
         // We also need to set the stack adjustment so that it is at the
         // bottom of the memory and far away from heap allocations.
         unsafe {
-            (*ret_proc.frame).pc = func_vaddr;
+            (*ret_proc.frame).pc = func_v_addr;
             (*ret_proc.frame).regs[Registers::A0 as usize] = args;
             // 1 is the return address register. This makes it so we
             // don't have to do syscall_exit() when a kernel process
@@ -482,7 +485,7 @@ impl Process {
 
     pub fn new_default(func: fn()) -> Self {
         let func_addr = func as usize;
-        let func_vaddr = func_addr;
+        let func_v_addr = func_addr;
         // println!("func_addr = {:x} -> {:x}", func_addr, func_vaddr);
         // We will convert NEXT_PID below into an atomic increment when
         // we start getting into multi-hart processing. For now, we want
@@ -509,9 +512,9 @@ impl Process {
         // to usize first and then add PAGE_SIZE is better.
         // We also need to set the stack adjustment so that it is at the
         // bottom of the memory and far away from heap allocations.
-        let saddr = ret_proc.stack as usize;
+        let s_addr = ret_proc.stack as usize;
         unsafe {
-            (*ret_proc.frame).pc = func_vaddr;
+            (*ret_proc.frame).pc = func_v_addr;
             (*ret_proc.frame).regs[Registers::Sp as usize] = STACK_ADDR + PAGE_SIZE * STACK_PAGES;
             (*ret_proc.frame).mode = CpuMode::User as usize;
             (*ret_proc.frame).pid = ret_proc.pid as usize;
@@ -534,7 +537,7 @@ impl Process {
             map(
                 pt,
                 STACK_ADDR + addr,
-                saddr + addr,
+                s_addr + addr,
                 EntryBits::UserReadWrite.val(),
                 0,
             );
@@ -546,7 +549,7 @@ impl Process {
             let modifier = i * 0x1000;
             map(
                 pt,
-                func_vaddr + modifier,
+                func_v_addr + modifier,
                 func_addr + modifier,
                 EntryBits::UserReadWriteExecute.val(),
                 0,
@@ -591,6 +594,7 @@ pub enum FileDescriptor {
 // We will allow dead code for now until we have a need for the
 // private process data. This is essentially our resource control block (RCB).
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct ProcessData {
     environ: BTreeMap<String, String>,
     fdesc: BTreeMap<u16, FileDescriptor>,
@@ -601,9 +605,9 @@ pub struct ProcessData {
 // is a per-process block queuing algorithm, we can put that here.
 impl ProcessData {
     pub fn new() -> Self {
-        ProcessData {
-            environ: BTreeMap::new(),
-            fdesc: BTreeMap::new(),
-        }
+        // ProcessData {
+        //     ..Default::default()
+        // }
+        ProcessData::default()
     }
 }

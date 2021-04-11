@@ -24,7 +24,7 @@ pub const PAGE_SIZE: usize = 1 << 12;
 /// Therefore, all alignments must be made as a power of two.
 /// This function always rounds up.
 pub const fn align_val(val: usize, order: usize) -> usize {
-    let o = (1usize << order) - 1;
+    let o = (1_usize << order) - 1;
     (val + o) & !o
 }
 
@@ -112,7 +112,7 @@ pub fn init() {
 }
 
 /// Allocate a page or multiple pages
-/// pages: the number of PAGE_SIZE pages to allocate
+/// pages: the number of `PAGE_SIZE` pages to allocate
 pub fn alloc(pages: usize) -> *mut u8 {
     // We have to find a contiguous allocation of pages
     assert!(pages > 0);
@@ -169,7 +169,7 @@ pub fn alloc(pages: usize) -> *mut u8 {
 
 /// Allocate and zero a page or multiple pages
 /// pages: the number of pages to allocate
-/// Each page is PAGE_SIZE which is calculated as 1 << PAGE_ORDER
+/// Each page is `PAGE_SIZE` which is calculated as 1 << `PAGE_ORDER`
 /// On RISC-V, this typically will be 4,096 bytes.
 pub fn zalloc(pages: usize) -> *mut u8 {
     // Allocate and zero a page.
@@ -215,7 +215,7 @@ pub fn dealloc(ptr: *mut u8) {
         // If the following assertion fails, it is most likely
         // caused by a double-free.
         assert!(
-            (*p).is_last() == true,
+            (*p).is_last(),
             "Possible double-free detected! (Not taken found \
 		         before last)"
         );
@@ -376,7 +376,7 @@ impl Table {
 ///       The bits MUST include one or more of the following:
 ///          Read, Write, Execute
 ///       The valid bit automatically gets added.
-pub fn map(root: &mut Table, vaddr: usize, paddr: usize, bits: i64, level: usize) {
+pub fn map(root: &mut Table, v_addr: usize, p_addr: usize, bits: i64, level: usize) {
     // Make sure that Read, Write, or Execute have been provided
     // otherwise, we'll leak memory and always create a page fault.
     assert!(bits & 0xe != 0);
@@ -385,11 +385,11 @@ pub fn map(root: &mut Table, vaddr: usize, paddr: usize, bits: i64, level: usize
     // which is why we use the mask 0x1ff = 0b1_1111_1111 (9 bits)
     let vpn = [
         // VPN[0] = vaddr[20:12]
-        (vaddr >> 12) & 0x1ff,
+        (v_addr >> 12) & 0x1ff,
         // VPN[1] = vaddr[29:21]
-        (vaddr >> 21) & 0x1ff,
+        (v_addr >> 21) & 0x1ff,
         // VPN[2] = vaddr[38:30]
-        (vaddr >> 30) & 0x1ff,
+        (v_addr >> 30) & 0x1ff,
     ];
 
     // Just like the virtual address, extract the physical address
@@ -398,11 +398,11 @@ pub fn map(root: &mut Table, vaddr: usize, paddr: usize, bits: i64, level: usize
     // 0x3ff_ffff = 0b11_1111_1111_1111_1111_1111_1111 (26 bits).
     let ppn = [
         // PPN[0] = paddr[20:12]
-        (paddr >> 12) & 0x1ff,
+        (p_addr >> 12) & 0x1ff,
         // PPN[1] = paddr[29:21]
-        (paddr >> 21) & 0x1ff,
+        (p_addr >> 21) & 0x1ff,
         // PPN[2] = paddr[55:30]
-        (paddr >> 30) & 0x3ff_ffff,
+        (p_addr >> 30) & 0x3ff_ffff,
     ];
     // We will use this as a floating reference so that we can set
     // individual entries as we walk the table.
@@ -452,7 +452,7 @@ pub fn map(root: &mut Table, vaddr: usize, paddr: usize, bits: i64, level: usize
 pub fn unmap(root: &mut Table) {
     // Start with level 2
     for lv2 in 0..Table::len() {
-        let ref entry_lv2 = root.entries[lv2];
+        let entry_lv2 = &root.entries[lv2];
         if entry_lv2.is_valid() && entry_lv2.is_branch() {
             // This is a valid entry, so drill down and free.
             let memaddr_lv1 = (entry_lv2.get_entry() & !0x3ff) << 2;
@@ -462,7 +462,7 @@ pub fn unmap(root: &mut Table) {
                 (memaddr_lv1 as *mut Table).as_mut().unwrap()
             };
             for lv1 in 0..Table::len() {
-                let ref entry_lv1 = table_lv1.entries[lv1];
+                let entry_lv1 = &table_lv1.entries[lv1];
                 if entry_lv1.is_valid() && entry_lv1.is_branch() {
                     let memaddr_lv0 = (entry_lv1.get_entry() & !0x3ff) << 2;
                     // The next level is level 0, which
@@ -480,15 +480,15 @@ pub fn unmap(root: &mut Table) {
 /// physical address.
 /// If a page fault would occur, this returns None
 /// Otherwise, it returns Some with the physical address.
-pub fn virt_to_phys(root: &Table, vaddr: usize) -> Option<usize> {
+pub fn virt_to_phys(root: &Table, v_addr: usize) -> Option<usize> {
     // Walk the page table pointed to by root
     let vpn = [
         // VPN[0] = vaddr[20:12]
-        (vaddr >> 12) & 0x1ff,
+        (v_addr >> 12) & 0x1ff,
         // VPN[1] = vaddr[29:21]
-        (vaddr >> 21) & 0x1ff,
+        (v_addr >> 21) & 0x1ff,
         // VPN[2] = vaddr[38:30]
-        (vaddr >> 30) & 0x1ff,
+        (v_addr >> 30) & 0x1ff,
     ];
 
     let mut v = &root.entries[vpn[2]];
@@ -503,7 +503,7 @@ pub fn virt_to_phys(root: &Table, vaddr: usize) -> Option<usize> {
             // bits and they start at bit #12. So, our formula
             // 12 + i * 9
             let off_mask = (1 << (12 + i * 9)) - 1;
-            let vaddr_pgoff = vaddr & off_mask;
+            let vaddr_pgoff = v_addr & off_mask;
             let addr = ((v.get_entry() << 2) as usize) & !off_mask;
             return Some(addr | vaddr_pgoff);
         }
