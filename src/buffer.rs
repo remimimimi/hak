@@ -32,11 +32,11 @@ impl Buffer {
         self.buffer
     }
 
-    pub fn get(&self) -> *const u8 {
+    pub const fn get(&self) -> *const u8 {
         self.buffer
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
     }
 }

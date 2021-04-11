@@ -11,7 +11,7 @@ enum AllocListFlags {
     Taken = 1 << 63,
 }
 impl AllocListFlags {
-    pub fn val(self) -> usize {
+    pub const fn val(self) -> usize {
         self as usize
     }
 }
@@ -20,7 +20,7 @@ struct AllocList {
     pub flags_size: usize,
 }
 impl AllocList {
-    pub fn is_taken(&self) -> bool {
+    pub const fn is_taken(&self) -> bool {
         self.flags_size & AllocListFlags::Taken.val() != 0
     }
 
@@ -44,7 +44,7 @@ impl AllocList {
         }
     }
 
-    pub fn get_size(&self) -> usize {
+    pub const fn get_size(&self) -> usize {
         self.flags_size & !AllocListFlags::Taken.val()
     }
 }

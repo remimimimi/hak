@@ -137,7 +137,7 @@ impl MinixFileSystem {
         for i in 2..num_dirents {
             unsafe {
                 // let d = &*dirents.add(i);
-                let ref d = *dirents.add(i);
+                let d = &(*dirents.add(i));
                 let d_ino = Self::get_inode(bdev, d.inode).unwrap();
                 let mut new_cwd = String::with_capacity(120);
                 for i in cwd.bytes() {
@@ -474,7 +474,7 @@ impl MinixFileSystem {
         0
     }
 
-    pub fn stat(&self, inode: &Inode) -> Stat {
+    pub const fn stat(&self, inode: &Inode) -> Stat {
         Stat {
             mode: inode.mode,
             size: inode.size,

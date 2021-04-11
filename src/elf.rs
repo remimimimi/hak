@@ -137,7 +137,7 @@ impl File {
 
     // load
     pub fn load_proc(buffer: &Buffer) -> Result<Process, LoadErrors> {
-        let elf_fl = Self::load(&buffer);
+        let elf_fl = Self::load(buffer);
         if elf_fl.is_err() {
             return Err(elf_fl.err().unwrap());
         }

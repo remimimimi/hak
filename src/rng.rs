@@ -20,7 +20,7 @@ pub struct EntropyDevice {
 }
 impl EntropyDevice {
     pub const fn new() -> Self {
-        EntropyDevice {
+        Self {
             queue: null_mut(),
             dev: null_mut(),
             idx: 0,

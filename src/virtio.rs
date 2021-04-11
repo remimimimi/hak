@@ -152,11 +152,11 @@ pub enum DeviceTypes {
 // pointer, so we need to "undo" the scaling that
 // Rust will do with the .add() function.
 impl MmioOffsets {
-    pub fn val(self) -> usize {
+    pub const fn val(self) -> usize {
         self as usize
     }
 
-    pub fn scaled(self, scale: usize) -> usize {
+    pub const fn scaled(self, scale: usize) -> usize {
         self.val() / scale
     }
 
@@ -177,32 +177,32 @@ pub enum StatusField {
 // The status field will be compared to the status register. So,
 // I've made some helper functions to checking that register easier.
 impl StatusField {
-    pub fn val(self) -> usize {
+    pub const fn val(self) -> usize {
         self as usize
     }
 
-    pub fn val32(self) -> u32 {
+    pub const fn val32(self) -> u32 {
         self as u32
     }
 
-    pub fn test(sf: u32, bit: StatusField) -> bool {
+    pub const fn test(sf: u32, bit: Self) -> bool {
         sf & bit.val32() != 0
     }
 
     pub fn is_failed(sf: u32) -> bool {
-        StatusField::test(sf, StatusField::Failed)
+        Self::test(sf, Self::Failed)
     }
 
     pub fn needs_reset(sf: u32) -> bool {
-        StatusField::test(sf, StatusField::DeviceNeedsReset)
+        Self::test(sf, Self::DeviceNeedsReset)
     }
 
     pub fn driver_ok(sf: u32) -> bool {
-        StatusField::test(sf, StatusField::DriverOk)
+        Self::test(sf, Self::DriverOk)
     }
 
     pub fn features_ok(sf: u32) -> bool {
-        StatusField::test(sf, StatusField::FeaturesOk)
+        Self::test(sf, Self::FeaturesOk)
     }
 }
 
@@ -225,13 +225,13 @@ pub struct VirtioDevice {
 
 impl VirtioDevice {
     pub const fn new() -> Self {
-        VirtioDevice {
+        Self {
             devtype: DeviceTypes::None,
         }
     }
 
     pub const fn new_with(devtype: DeviceTypes) -> Self {
-        VirtioDevice { devtype }
+        Self { devtype }
     }
 }
 
@@ -333,7 +333,7 @@ pub fn probe() {
     }
 }
 
-pub fn setup_network_device(_ptr: *mut u32) -> bool {
+pub const fn setup_network_device(_ptr: *mut u32) -> bool {
     false
 }
 
@@ -344,7 +344,8 @@ pub fn setup_network_device(_ptr: *mut u32) -> bool {
 pub fn handle_interrupt(interrupt: u32) {
     let idx = interrupt as usize - 1;
     unsafe {
-        if let Some(vd) = &VIRTIO_DEVICES[idx] {
+        // if let Some(vd) = &VIRTIO_DEVICES[idx] {
+        if let Some(Some(vd)) = VIRTIO_DEVICES.get(idx) {
             match vd.devtype {
                 DeviceTypes::Block => {
                     block::handle_interrupt(idx);

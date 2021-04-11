@@ -105,12 +105,11 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             // from a user process using virt_to_phys. If this turns
             // out to be a page fault, we need to NOT proceed with
             // the read!
-            let mut physical_buffer = (*frame).regs[Registers::A2 as usize];
             // If the MMU is turned on, we have to translate the
             // address. Eventually, I will put this code into a
             // convenient function, but for now, it will show how
             // translation will be done.
-            if (*frame).satp != 0 {
+            let physical_buffer = if (*frame).satp != 0 {
                 let p = get_by_pid((*frame).pid as u16);
                 let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
                 let paddr = virt_to_phys(table, (*frame).regs[12]);
@@ -118,8 +117,10 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                     (*frame).regs[Registers::A0 as usize] = -1_isize as usize;
                     return 0;
                 }
-                physical_buffer = paddr.unwrap();
-            }
+                paddr.unwrap()
+            } else {
+                (*frame).regs[Registers::A2 as usize]
+            };
             // TODO: Not only do we need to check the buffer, but it
             // is possible that the buffer spans multiple pages. We
             // need to check all pages that this might span. We

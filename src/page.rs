@@ -38,7 +38,7 @@ pub enum PageBits {
 impl PageBits {
     // We convert PageBits to a u8 a lot, so this is
     // for convenience.
-    pub fn val(self) -> u8 {
+    pub const fn val(self) -> u8 {
         self as u8
     }
 }
@@ -59,7 +59,7 @@ impl Page {
 
     // If the page is marked as being taken (allocated), then
     // this function returns true. Otherwise, it returns false.
-    pub fn is_taken(&self) -> bool {
+    pub const fn is_taken(&self) -> bool {
         self.flags & PageBits::Taken.val() != 0
     }
 
@@ -310,7 +310,7 @@ pub enum EntryBits {
 // into an i64, which is what our page table
 // entries will be.
 impl EntryBits {
-    pub fn val(self) -> i64 {
+    pub const fn val(self) -> i64 {
         self as i64
     }
 }
@@ -326,7 +326,7 @@ pub struct Entry {
 // The Entry structure describes one of the 512 entries per table, which is
 // described in the RISC-V privileged spec Figure 4.18.
 impl Entry {
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.get_entry() & EntryBits::Valid.val() != 0
     }
 
@@ -337,7 +337,7 @@ impl Entry {
     }
 
     // A leaf has one or more RWX bits set
-    pub fn is_leaf(&self) -> bool {
+    pub const fn is_leaf(&self) -> bool {
         self.get_entry() & 0xe != 0
     }
 
@@ -349,7 +349,7 @@ impl Entry {
         self.entry = entry;
     }
 
-    pub fn get_entry(&self) -> i64 {
+    pub const fn get_entry(&self) -> i64 {
         self.entry
     }
 }
@@ -360,7 +360,7 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn len() -> usize {
+    pub const fn len() -> usize {
         512
     }
 }

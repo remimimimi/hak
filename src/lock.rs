@@ -24,7 +24,7 @@ impl<'a> Mutex {
         }
     }
 
-    pub fn val(&'a self) -> &'a MutexState {
+    pub const fn val(&'a self) -> &'a MutexState {
         &self.state
     }
 

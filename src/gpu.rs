@@ -274,13 +274,13 @@ impl Device {
             height: 480,
         }
     }
-    pub fn get_framebuffer(&self) -> *mut Pixel {
+    pub const fn get_framebuffer(&self) -> *mut Pixel {
         self.framebuffer
     }
-    pub fn get_width(&self) -> u32 {
+    pub const fn get_width(&self) -> u32 {
         self.width
     }
-    pub fn get_height(&self) -> u32 {
+    pub const fn get_height(&self) -> u32 {
         self.height
     }
 }

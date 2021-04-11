@@ -128,7 +128,7 @@ pub struct TrapFrame {
 /// is `TrapFrame`.
 impl TrapFrame {
     pub const fn new() -> Self {
-        TrapFrame {
+        Self {
             regs: [0; 32],
             fregs: [0; 32],
             satp: 0,

@@ -20,8 +20,8 @@ impl Write for Uart {
 }
 
 impl Uart {
-    pub fn new(base_address: usize) -> Self {
-        Uart { base_address }
+    pub const fn new(base_address: usize) -> Self {
+        Self { base_address }
     }
 
     pub fn init(&mut self) {

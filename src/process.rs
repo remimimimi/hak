@@ -447,7 +447,7 @@ impl Process {
         self.frame
     }
 
-    pub fn get_frame(&self) -> *const TrapFrame {
+    pub const fn get_frame(&self) -> *const TrapFrame {
         self.frame
     }
 
@@ -463,7 +463,7 @@ impl Process {
         self.root as usize
     }
 
-    pub fn get_state(&self) -> &ProcessState {
+    pub const fn get_state(&self) -> &ProcessState {
         &self.state
     }
 
@@ -471,11 +471,11 @@ impl Process {
         self.state = ps;
     }
 
-    pub fn get_pid(&self) -> u16 {
+    pub const fn get_pid(&self) -> u16 {
         self.pid
     }
 
-    pub fn get_sleep_until(&self) -> usize {
+    pub const fn get_sleep_until(&self) -> usize {
         self.sleep_until
     }
 
@@ -490,7 +490,7 @@ impl Process {
         // We will convert NEXT_PID below into an atomic increment when
         // we start getting into multi-hart processing. For now, we want
         // a process. Get it to work, then improve it!
-        let mut ret_proc = Process {
+        let mut ret_proc = Self {
             frame: zalloc(1) as *mut TrapFrame,
             stack: alloc(STACK_PAGES),
             pid: unsafe { NEXT_PID },
@@ -608,6 +608,6 @@ impl ProcessData {
         // ProcessData {
         //     ..Default::default()
         // }
-        ProcessData::default()
+        Self::default()
     }
 }
