@@ -34,21 +34,21 @@ extern crate alloc;
 #[macro_export]
 macro_rules! print {
     ($($args:tt)+) => ({
-            use core::fmt::Write;
-            let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
-            });
+        use core::fmt::Write;
+        let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
+    });
 }
 #[macro_export]
 macro_rules! println {
     () => ({
-           print!("\r\n")
-           });
+        print!("\r\n")
+    });
     ($fmt:expr) => ({
-            print!(concat!($fmt, "\r\n"))
-            });
+        print!(concat!($fmt, "\r\n"))
+    });
     ($fmt:expr, $($args:tt)+) => ({
-            print!(concat!($fmt, "\r\n"), $($args)+)
-            });
+        print!(concat!($fmt, "\r\n"), $($args)+)
+    });
 }
 
 // ///////////////////////////////////
@@ -59,12 +59,7 @@ macro_rules! println {
 fn panic(info: &core::panic::PanicInfo) -> ! {
     print!("Aborting: ");
     if let Some(p) = info.location() {
-        println!(
-            "line {}, file {}: {}",
-            p.line(),
-            p.file(),
-            info.message().unwrap()
-        );
+        println!("line {}, file {}: {}", p.line(), p.file(), info.message().unwrap());
     } else {
         println!("no information available.");
     }
@@ -74,7 +69,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 extern "C" fn abort() -> ! {
     loop {
         unsafe {
-            llvm_asm!("wfi"::::"volatile");
+            asm!("wfi");
         }
     }
 }

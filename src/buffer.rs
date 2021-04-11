@@ -3,13 +3,20 @@
 // of in the file system.
 // Stephen Marz
 
+use core::{
+    ops::{
+        Index,
+        IndexMut,
+    },
+    ptr::null_mut,
+};
+
 use crate::{
     cpu::memcpy,
-    kmem::{kfree, kmalloc},
-};
-use core::{
-    ops::{Index, IndexMut},
-    ptr::null_mut,
+    kmem::{
+        kfree,
+        kmalloc,
+    },
 };
 // We need a Buffer that can automatically be created and destroyed
 // in the lifetime of our read and write functions. In C, this would entail
@@ -49,6 +56,7 @@ impl Default for Buffer {
 
 impl Index<usize> for Buffer {
     type Output = u8;
+
     fn index(&self, idx: usize) -> &Self::Output {
         unsafe { self.get().add(idx).as_ref().unwrap() }
     }

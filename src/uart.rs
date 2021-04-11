@@ -3,7 +3,10 @@
 
 use core::{
     convert::TryInto,
-    fmt::{Error, Write},
+    fmt::{
+        Error,
+        Write,
+    },
 };
 
 pub struct Uart {

@@ -2,14 +2,26 @@
 // Input handling.
 // Stephen Marz
 
-use crate::kmem::kmalloc;
-use crate::page::{zalloc, PAGE_SIZE};
-use crate::virtio::{
-    Descriptor, MmioOffsets, Queue, StatusField, MMIO_VIRTIO_START, VIRTIO_DESC_F_WRITE,
-    VIRTIO_F_RING_EVENT_IDX, VIRTIO_RING_SIZE,
-};
 use alloc::collections::VecDeque;
 use core::mem::size_of;
+
+use crate::{
+    kmem::kmalloc,
+    page::{
+        zalloc,
+        PAGE_SIZE,
+    },
+    virtio::{
+        Descriptor,
+        MmioOffsets,
+        Queue,
+        StatusField,
+        MMIO_VIRTIO_START,
+        VIRTIO_DESC_F_WRITE,
+        VIRTIO_F_RING_EVENT_IDX,
+        VIRTIO_RING_SIZE,
+    },
+};
 
 pub static mut ABS_EVENTS: Option<VecDeque<Event>> = None;
 pub static mut ABS_OBSERVERS: Option<VecDeque<u16>> = None;
@@ -111,8 +123,7 @@ pub struct Device {
     status_buffer: *mut Event,
 }
 
-pub static mut INPUT_DEVICES: [Option<Device>; 8] =
-    [None, None, None, None, None, None, None, None];
+pub static mut INPUT_DEVICES: [Option<Device>; 8] = [None, None, None, None, None, None, None, None];
 
 pub fn setup_input_device(ptr: *mut u32) -> bool {
     unsafe {
@@ -128,12 +139,10 @@ pub fn setup_input_device(ptr: *mut u32) -> bool {
         ptr.add(MmioOffsets::Status.scale32()).write_volatile(0);
         let mut status_bits = StatusField::Acknowledge.val32();
         // 2. Set ACKNOWLEDGE status bit
-        ptr.add(MmioOffsets::Status.scale32())
-            .write_volatile(status_bits);
+        ptr.add(MmioOffsets::Status.scale32()).write_volatile(status_bits);
         // 3. Set the DRIVER status bit
         status_bits |= StatusField::DriverOk.val32();
-        ptr.add(MmioOffsets::Status.scale32())
-            .write_volatile(status_bits);
+        ptr.add(MmioOffsets::Status.scale32()).write_volatile(status_bits);
         // 4. Read device feature bits, write subset of feature
         // bits understood by OS and driver    to the device.
         let mut host_features = ptr.add(MmioOffsets::HostFeatures.scale32()).read_volatile();
@@ -143,8 +152,7 @@ pub fn setup_input_device(ptr: *mut u32) -> bool {
             .write_volatile(host_features);
         // 5. Set the FEATURES_OK status bit
         status_bits |= StatusField::FeaturesOk.val32();
-        ptr.add(MmioOffsets::Status.scale32())
-            .write_volatile(status_bits);
+        ptr.add(MmioOffsets::Status.scale32()).write_volatile(status_bits);
         // 6. Re-read status to ensure FEATURES_OK is still set.
         // Otherwise, it doesn't support our features.
         let status_ok = ptr.add(MmioOffsets::Status.scale32()).read_volatile();
@@ -213,8 +221,7 @@ pub fn setup_input_device(ptr: *mut u32) -> bool {
             .write_volatile(queue_pfn / PAGE_SIZE as u32);
         // 8. Set the DRIVER_OK status bit. Device is now "live"
         status_bits |= StatusField::DriverOk.val32();
-        ptr.add(MmioOffsets::Status.scale32())
-            .write_volatile(status_bits);
+        ptr.add(MmioOffsets::Status.scale32()).write_volatile(status_bits);
 
         let config_ptr = ptr.add(MmioOffsets::Config.scale32()) as *mut Config;
 
@@ -225,7 +232,8 @@ pub fn setup_input_device(ptr: *mut u32) -> bool {
 
         // config_ptr.write_volatile(config);
         // let id = config_ptr.read_volatile().config.abs;
-        // println!("Min: {}, Max: {}, fuzz: {}, flat: {}, res: {}", id.min, id.max, id.fuzz, id.flat, id.res);
+        // println!("Min: {}, Max: {}, fuzz: {}, flat: {}, res: {}", id.min, id.max, id.fuzz, id.flat,
+        // id.res);
 
         let mut dev = Device {
             event_queue: event_queue_ptr,
@@ -276,32 +284,30 @@ fn pending(dev: &mut Device) {
             let elem = &queue.used.ring[dev.event_ack_used_idx as usize % VIRTIO_RING_SIZE];
             let desc = &queue.desc[elem.id as usize];
             let event = (desc.addr as *const Event).as_ref().unwrap();
-            // print!("EAck {}, elem {}, len {}, addr 0x{:08x}: ", dev.event_ack_used_idx, elem.id, elem.len, desc.addr as usize);
-            // println!("Type = {:x}, Code = {:x}, Value = {:x}", event.event_type, event.code, event.value);
+            // print!("EAck {}, elem {}, len {}, addr 0x{:08x}: ", dev.event_ack_used_idx, elem.id, elem.len,
+            // desc.addr as usize); println!("Type = {:x}, Code = {:x}, Value = {:x}",
+            // event.event_type, event.code, event.value);
             repopulate_event(dev, elem.id as usize);
             dev.event_ack_used_idx = dev.event_ack_used_idx.wrapping_add(1);
             match event.event_type {
-                EventType::Abs => {
+                | EventType::Abs => {
                     let mut ev = ABS_EVENTS.take().unwrap();
                     ev.push_back(*event);
                     ABS_EVENTS.replace(ev);
-                }
-                EventType::Key => {
+                },
+                | EventType::Key => {
                     let mut ev = KEY_EVENTS.take().unwrap();
                     ev.push_back(*event);
                     KEY_EVENTS.replace(ev);
-                }
-                _ => {}
+                },
+                | _ => {},
             }
         }
         // Next, the status queue
         let queue = &(*dev.status_queue);
         while dev.status_ack_used_idx != queue.used.idx {
             let elem = &queue.used.ring[dev.status_ack_used_idx as usize % VIRTIO_RING_SIZE];
-            print!(
-                "SAck {}, elem {}, len {}: ",
-                dev.status_ack_used_idx, elem.id, elem.len
-            );
+            print!("SAck {}, elem {}, len {}: ", dev.status_ack_used_idx, elem.id, elem.len);
             let desc = &queue.desc[elem.id as usize];
             let event = (desc.addr as *const Event).as_ref().unwrap();
             println!(

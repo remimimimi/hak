@@ -3,8 +3,10 @@
 // Stephen Marz
 // 1 Nov 2019
 
-use crate::uart::Uart;
-use crate::virtio;
+use crate::{
+    uart::Uart,
+    virtio,
+};
 
 const PLIC_PRIORITY: usize = 0x0c00_0000;
 const PLIC_PENDING: usize = 0x0c00_1000;
@@ -117,10 +119,10 @@ pub fn handle_interrupt() {
         // automatically prioritize the next interrupt, so when we get it from claim, it
         // will be the next in priority order.
         match interrupt {
-            1..=8 => {
+            | 1..=8 => {
                 virtio::handle_interrupt(interrupt);
-            }
-            10 => {
+            },
+            | 10 => {
                 // Interrupt 10 is the UART interrupt.
                 // We would typically set this to be handled out of the interrupt context,
                 // but we're testing here! C'mon!
@@ -133,25 +135,25 @@ pub fn handle_interrupt() {
                     // was because we needed to poll for UART data. Now that we have interrupts,
                     // here it goes!
                     match c {
-                        8 => {
+                        | 8 => {
                             // This is a backspace, so we
                             // essentially have to write a space and
                             // backup again:
                             print!("{} {}", 8 as char, 8 as char);
-                        }
-                        10 | 13 => {
+                        },
+                        | 10 | 13 => {
                             // Newline or carriage-return
                             println!();
-                        }
-                        _ => {
+                        },
+                        | _ => {
                             print!("{}", c as char);
-                        }
+                        },
                     }
                 }
-            }
-            _ => {
+            },
+            | _ => {
                 println!("Unknown external interrupt: {}", interrupt);
-            }
+            },
         }
         // We've claimed it, so now say that we've handled it. This resets the interrupt pending
         // and allows the UART to interrupt again. Otherwise, the UART will get "stuck".

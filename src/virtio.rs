@@ -3,11 +3,18 @@
 // Stephen Marz
 // 10 March 2020
 
-use crate::rng::setup_entropy_device;
-use crate::{block, block::setup_block_device, page::PAGE_SIZE};
-use crate::{gpu, gpu::setup_gpu_device};
-use crate::{input, input::setup_input_device};
 use core::mem::size_of;
+
+use crate::{
+    block,
+    block::setup_block_device,
+    gpu,
+    gpu::setup_gpu_device,
+    input,
+    input::setup_input_device,
+    page::PAGE_SIZE,
+    rng::setup_entropy_device,
+};
 
 // Flags
 // Descriptor flags have VIRTIO_DESC_F as a prefix
@@ -73,8 +80,7 @@ pub struct Queue {
     pub avail: Available,
     // Calculating padding, we need the used ring to start on a page boundary. We take the page size, subtract the
     // amount the descriptor ring takes then subtract the available structure and ring.
-    pub padding0:
-        [u8; PAGE_SIZE - size_of::<Descriptor>() * VIRTIO_RING_SIZE - size_of::<Available>()],
+    pub padding0: [u8; PAGE_SIZE - size_of::<Descriptor>() * VIRTIO_RING_SIZE - size_of::<Available>()],
     pub used: Used,
 }
 
@@ -130,9 +136,9 @@ pub struct MmioDevice {
     interrupt_ack: u32,
     rsv5: [u8; 8],
     status: u32,
-    //rsv6: [u8; 140],
-    //uint32_t config[1];
-    // The config space starts at 0x100, but it is device dependent.
+    /* rsv6: [u8; 140],
+     * uint32_t config[1];
+     * The config space starts at 0x100, but it is device dependent. */
 }
 
 #[repr(usize)]
@@ -235,8 +241,7 @@ impl VirtioDevice {
     }
 }
 
-static mut VIRTIO_DEVICES: [Option<VirtioDevice>; 8] =
-    [None, None, None, None, None, None, None, None];
+static mut VIRTIO_DEVICES: [Option<VirtioDevice>; 8] = [None, None, None, None, None, None, None, None];
 
 /// Probe the VirtIO bus for devices that might be
 /// out there.
@@ -271,16 +276,16 @@ pub fn probe() {
         else {
             match deviceid {
                 // DeviceID 1 is a network device
-                1 => {
+                | 1 => {
                     print!("network device...");
                     if setup_network_device(ptr) {
                         println!("setup succeeded!");
                     } else {
                         println!("setup failed.");
                     }
-                }
+                },
                 // DeviceID 2 is a block device
-                2 => {
+                | 2 => {
                     print!("block device...");
                     if setup_block_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -291,18 +296,18 @@ pub fn probe() {
                     } else {
                         println!("setup failed.");
                     }
-                }
+                },
                 // DeviceID 4 is a random number generator device
-                4 => {
+                | 4 => {
                     print!("entropy device...");
                     if setup_entropy_device(ptr) {
                         println!("setup succeeded!");
                     } else {
                         println!("setup failed.");
                     }
-                }
+                },
                 // DeviceID 16 is a GPU device
-                16 => {
+                | 16 => {
                     print!("GPU device...");
                     if setup_gpu_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -313,9 +318,9 @@ pub fn probe() {
                     } else {
                         println!("setup failed.");
                     }
-                }
+                },
                 // DeviceID 18 is an input device
-                18 => {
+                | 18 => {
                     print!("input device...");
                     if setup_input_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -326,8 +331,8 @@ pub fn probe() {
                     } else {
                         println!("setup failed.");
                     }
-                }
-                _ => println!("unknown device type."),
+                },
+                | _ => println!("unknown device type."),
             }
         }
     }
@@ -347,18 +352,18 @@ pub fn handle_interrupt(interrupt: u32) {
         // if let Some(vd) = &VIRTIO_DEVICES[idx] {
         if let Some(Some(vd)) = VIRTIO_DEVICES.get(idx) {
             match vd.devtype {
-                DeviceTypes::Block => {
+                | DeviceTypes::Block => {
                     block::handle_interrupt(idx);
-                }
-                DeviceTypes::Gpu => {
+                },
+                | DeviceTypes::Gpu => {
                     gpu::handle_interrupt(idx);
-                }
-                DeviceTypes::Input => {
+                },
+                | DeviceTypes::Input => {
                     input::handle_interrupt(idx);
-                }
-                _ => {
+                },
+                | _ => {
                     println!("Invalid device generated interrupt!");
-                }
+                },
             }
         } else {
             println!("Spurious interrupt {}", interrupt);

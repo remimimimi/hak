@@ -3,7 +3,10 @@
 // Stephen Marz
 // 6 October 2019
 
-use core::{mem::size_of, ptr::null_mut};
+use core::{
+    mem::size_of,
+    ptr::null_mut,
+};
 
 // ////////////////////////////////
 // // Allocation routines
@@ -216,8 +219,7 @@ pub fn dealloc(ptr: *mut u8) {
         // caused by a double-free.
         assert!(
             (*p).is_last(),
-            "Possible double-free detected! (Not taken found \
-		         before last)"
+            "Possible double-free detected! (Not taken found before last)"
         );
         // If we get here, we've taken care of all previous pages and
         // we are on the last page.
@@ -236,8 +238,7 @@ pub fn print_page_allocations() {
         let alloc_end = ALLOC_START + num_pages * PAGE_SIZE;
         println!();
         println!(
-            "PAGE ALLOCATION TABLE\nMETA: {:p} -> {:p}\nPHYS: \
-		          0x{:x} -> 0x{:x}",
+            "PAGE ALLOCATION TABLE\nMETA: {:p} -> {:p}\nPHYS: 0x{:x} -> 0x{:x}",
             beg, end, alloc_beg, alloc_end
         );
         println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -262,11 +263,7 @@ pub fn print_page_allocations() {
             beg = beg.add(1);
         }
         println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        println!(
-            "Allocated: {:>6} pages ({:>10} bytes).",
-            num,
-            num * PAGE_SIZE
-        );
+        println!("Allocated: {:>6} pages ({:>10} bytes).", num, num * PAGE_SIZE);
         println!(
             "Free     : {:>6} pages ({:>10} bytes).",
             num_pages - num,

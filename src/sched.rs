@@ -3,8 +3,14 @@
 // Stephen Marz
 // 27 Dec 2019
 
-use crate::cpu::get_mtime;
-use crate::process::{ProcessState, PROCESS_LIST, PROCESS_LIST_MUTEX};
+use crate::{
+    cpu::get_mtime,
+    process::{
+        ProcessState,
+        PROCESS_LIST,
+        PROCESS_LIST_MUTEX,
+    },
+};
 
 pub fn schedule() -> usize {
     let mut frame_addr: usize = 0x1111;
@@ -22,11 +28,11 @@ pub fn schedule() -> usize {
                 pl.rotate_left(1);
                 if let Some(prc) = pl.front_mut() {
                     match prc.get_state() {
-                        ProcessState::Running => {
+                        | ProcessState::Running => {
                             frame_addr = prc.get_frame_address();
                             break 'procfindloop;
-                        }
-                        ProcessState::Sleeping => {
+                        },
+                        | ProcessState::Sleeping => {
                             // Awaken sleeping processes whose sleep until is in
                             // the past.
                             if prc.get_sleep_until() <= get_mtime() {
@@ -34,8 +40,8 @@ pub fn schedule() -> usize {
                                 frame_addr = prc.get_frame_address();
                                 break 'procfindloop;
                             }
-                        }
-                        _ => {}
+                        },
+                        | _ => {},
                     }
                 }
             }

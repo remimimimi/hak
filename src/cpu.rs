@@ -39,7 +39,7 @@ pub enum Registers {
     T2,
     S0,
     S1,
-    A0, /* 10 */
+    A0, // 10
     A1,
     A2,
     A3,
@@ -49,7 +49,7 @@ pub enum Registers {
     A7,
     S2,
     S3,
-    S4, /* 20 */
+    S4, // 20
     S5,
     S6,
     S7,
@@ -59,7 +59,7 @@ pub enum Registers {
     S11,
     T3,
     T4,
-    T5, /* 30 */
+    T5, // 30
     T6,
 }
 
@@ -76,7 +76,7 @@ pub enum FRegisters {
     Ft7,
     Fs0,
     Fs1,
-    Fa0, /* 10 */
+    Fa0, // 10
     Fa1,
     Fa2,
     Fa3,
@@ -86,7 +86,7 @@ pub enum FRegisters {
     Fa7,
     Fs2,
     Fs3,
-    Fs4, /* 20 */
+    Fs4, // 20
     Fs5,
     Fs6,
     Fs7,
@@ -96,7 +96,7 @@ pub enum FRegisters {
     Fs11,
     Ft8,
     Ft9,
-    Ft10, /* 30 */
+    Ft10, // 30
     Ft11,
 }
 
