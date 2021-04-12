@@ -1,4 +1,3 @@
-// mem.S
 // Importation of linker symbols
 
 .section .rodata

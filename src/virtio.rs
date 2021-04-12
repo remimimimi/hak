@@ -1,8 +1,3 @@
-// virtio.rs
-// VirtIO routines for the VirtIO protocol
-// Stephen Marz
-// 10 March 2020
-
 use core::mem::size_of;
 
 use crate::{
@@ -243,7 +238,7 @@ impl VirtioDevice {
 
 static mut VIRTIO_DEVICES: [Option<VirtioDevice>; 8] = [None, None, None, None, None, None, None, None];
 
-/// Probe the VirtIO bus for devices that might be
+/// Probe the `VirtIO` bus for devices that might be
 /// out there.
 pub fn probe() {
     // Rust's for loop uses an Iterator object, which now has a step_by

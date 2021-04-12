@@ -1,7 +1,3 @@
-// input.rs
-// Input handling.
-// Stephen Marz
-
 use alloc::collections::VecDeque;
 use core::mem::size_of;
 

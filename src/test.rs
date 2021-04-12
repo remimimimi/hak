@@ -1,4 +1,3 @@
-// test.rs
 use crate::{
     fs::MinixFileSystem,
     syscall,

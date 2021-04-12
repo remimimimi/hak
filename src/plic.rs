@@ -1,8 +1,3 @@
-// plic.rs
-// Platform Level Interrupt Controller (PLIC)
-// Stephen Marz
-// 1 Nov 2019
-
 use crate::{
     uart::Uart,
     virtio,

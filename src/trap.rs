@@ -1,8 +1,3 @@
-// trap.rs
-// Trap routines
-// Stephen Marz
-// 10 October 2019
-
 use crate::{
     cpu::{
         TrapFrame,

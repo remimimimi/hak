@@ -1,8 +1,3 @@
-// block.rs
-// Block device using VirtIO protocol
-// Stephen Marz
-// 10 March 2020
-
 use alloc::boxed::Box;
 use core::mem::size_of;
 

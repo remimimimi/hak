@@ -1,9 +1,3 @@
-// cpu.rs
-// CPU and CPU-related routines
-// Also contains the kernel's trap frame
-// Stephen Marz
-// 14 October 2019
-
 // The frequency of QEMU is 10 MHz
 pub const FREQ: u64 = 10_000_000;
 // Let's do this 250 times per second for switching

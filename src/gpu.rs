@@ -1,8 +1,3 @@
-// gpu.rs
-// Graphics stuff
-// Stephen Marz
-// 12 May 2020
-
 #![allow(dead_code)]
 use core::{
     mem::size_of,

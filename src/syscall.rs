@@ -116,7 +116,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 // If we get here, the path couldn't be found, or for some reason
                 // open failed. So, we return -1 and move on.
                 println!("Could not open path '{}'.", path);
-                (*frame).regs[Registers::A0 as usize] = -1_isize as usize;
+                (*frame).regs[Registers::A0 as usize] = usize::MAX;
                 mepc + 4
             }
         },
@@ -141,7 +141,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
                 let paddr = virt_to_phys(table, (*frame).regs[12]);
                 if paddr.is_none() {
-                    (*frame).regs[Registers::A0 as usize] = -1_isize as usize;
+                    (*frame).regs[Registers::A0 as usize] = usize::MAX;
                     return 0;
                 }
                 paddr.unwrap()
@@ -153,7 +153,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             // need to check all pages that this might span. We
             // can't just do paddr and paddr + size, since there
             // could be a missing page somewhere in between.
-            let _ = fs::process_read(
+            fs::process_read(
                 (*frame).pid as u16,
                 (*frame).regs[Registers::A0 as usize] as usize,
                 (*frame).regs[Registers::A1 as usize] as u32,

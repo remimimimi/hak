@@ -1,8 +1,3 @@
-// sched.rs
-// Simple process scheduler
-// Stephen Marz
-// 27 Dec 2019
-
 use crate::{
     cpu::get_mtime,
     process::{

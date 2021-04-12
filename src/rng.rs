@@ -1,8 +1,3 @@
-// rng.rs
-// Random number generator using VirtIO
-// Stephen Marz
-// 16 March 2020
-
 #![allow(dead_code)]
 use core::{
     mem::size_of,
