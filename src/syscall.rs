@@ -52,26 +52,26 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
     // A7 is X17, so it's register number 17.
     let syscall_number = (*frame).regs[Registers::A7 as usize];
     match syscall_number {
-        | 0 | 93 => {
+        0 | 93 => {
             // Exit
             delete_process((*frame).pid as u16);
             0
         },
-        | 2 => {
+        2 => {
             // Easy putchar
             print!("{}", (*frame).regs[Registers::A0 as usize] as u8 as char);
             0
         },
-        | 8 => {
+        8 => {
             dump_registers(frame);
             mepc + 4
         },
-        | 10 => {
+        10 => {
             // Sleep
             set_sleeping((*frame).pid as u16, (*frame).regs[Registers::A0 as usize]);
             0
         },
-        | 11 => {
+        11 => {
             // execv
             // A0 = path
             // A1 = argv
@@ -120,7 +120,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
                 mepc + 4
             }
         },
-        | 63 => {
+        63 => {
             // Read system call
             // This is an asynchronous call. This will get the
             // process going. We won't hear the answer until
@@ -165,12 +165,12 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             // another process.
             0
         },
-        | 172 => {
+        172 => {
             // A0 = pid
             (*frame).regs[Registers::A0 as usize] = (*frame).pid;
             0
         },
-        | 180 => {
+        180 => {
             set_waiting((*frame).pid as u16);
             let _ = block_op(
                 (*frame).regs[Registers::A0 as usize],
@@ -185,7 +185,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
         // System calls 1000 and above are "special" system calls for our OS. I'll
         // try to mimic the normal system calls below 1000 so that this OS is compatible
         // with libraries.
-        | 1000 => {
+        1000 => {
             // get framebuffer
             // syscall_get_framebuffer(device)
             let dev = (*frame).regs[Registers::A0 as usize];
@@ -209,7 +209,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             }
             0
         },
-        | 1001 => {
+        1001 => {
             // transfer rectangle and invalidate
             let dev = (*frame).regs[Registers::A0 as usize];
             let x = (*frame).regs[Registers::A1 as usize] as u32;
@@ -219,7 +219,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             gpu::transfer(dev, x, y, width, height);
             0
         },
-        | 1002 => {
+        1002 => {
             // wait for keyboard events
             let mut ev = KEY_EVENTS.take().unwrap();
             let max_events = (*frame).regs[Registers::A1 as usize];
@@ -241,7 +241,7 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             KEY_EVENTS.replace(ev);
             0
         },
-        | 1004 => {
+        1004 => {
             // wait for abs events
             let mut ev = ABS_EVENTS.take().unwrap();
             let max_events = (*frame).regs[Registers::A1 as usize];
@@ -263,12 +263,12 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
             ABS_EVENTS.replace(ev);
             0
         },
-        | 1062 => {
+        1062 => {
             // gettime
             (*frame).regs[Registers::A0 as usize] = crate::cpu::get_mtime();
             0
         },
-        | _ => {
+        _ => {
             println!("Unknown syscall number {}", syscall_number);
             0
         },

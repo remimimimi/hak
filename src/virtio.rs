@@ -271,7 +271,7 @@ pub fn probe() {
         else {
             match deviceid {
                 // DeviceID 1 is a network device
-                | 1 => {
+                1 => {
                     print!("network device...");
                     if setup_network_device(ptr) {
                         println!("setup succeeded!");
@@ -280,7 +280,7 @@ pub fn probe() {
                     }
                 },
                 // DeviceID 2 is a block device
-                | 2 => {
+                2 => {
                     print!("block device...");
                     if setup_block_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -293,7 +293,7 @@ pub fn probe() {
                     }
                 },
                 // DeviceID 4 is a random number generator device
-                | 4 => {
+                4 => {
                     print!("entropy device...");
                     if setup_entropy_device(ptr) {
                         println!("setup succeeded!");
@@ -302,7 +302,7 @@ pub fn probe() {
                     }
                 },
                 // DeviceID 16 is a GPU device
-                | 16 => {
+                16 => {
                     print!("GPU device...");
                     if setup_gpu_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -315,7 +315,7 @@ pub fn probe() {
                     }
                 },
                 // DeviceID 18 is an input device
-                | 18 => {
+                18 => {
                     print!("input device...");
                     if setup_input_device(ptr) {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
@@ -327,7 +327,7 @@ pub fn probe() {
                         println!("setup failed.");
                     }
                 },
-                | _ => println!("unknown device type."),
+                _ => println!("unknown device type."),
             }
         }
     }
@@ -347,16 +347,16 @@ pub fn handle_interrupt(interrupt: u32) {
         // if let Some(vd) = &VIRTIO_DEVICES[idx] {
         if let Some(Some(vd)) = VIRTIO_DEVICES.get(idx) {
             match vd.devtype {
-                | DeviceTypes::Block => {
+                DeviceTypes::Block => {
                     block::handle_interrupt(idx);
                 },
-                | DeviceTypes::Gpu => {
+                DeviceTypes::Gpu => {
                     gpu::handle_interrupt(idx);
                 },
-                | DeviceTypes::Input => {
+                DeviceTypes::Input => {
                     input::handle_interrupt(idx);
                 },
-                | _ => {
+                _ => {
                     println!("Invalid device generated interrupt!");
                 },
             }

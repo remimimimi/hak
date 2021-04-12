@@ -23,11 +23,11 @@ pub fn schedule() -> usize {
                 pl.rotate_left(1);
                 if let Some(prc) = pl.front_mut() {
                     match prc.get_state() {
-                        | ProcessState::Running => {
+                        ProcessState::Running => {
                             frame_addr = prc.get_frame_address();
                             break 'procfindloop;
                         },
-                        | ProcessState::Sleeping => {
+                        ProcessState::Sleeping => {
                             // Awaken sleeping processes whose sleep until is in
                             // the past.
                             if prc.get_sleep_until() <= get_mtime() {
@@ -36,7 +36,7 @@ pub fn schedule() -> usize {
                                 break 'procfindloop;
                             }
                         },
-                        | _ => {},
+                        _ => {},
                     }
                 }
             }

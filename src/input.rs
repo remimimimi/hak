@@ -286,17 +286,17 @@ fn pending(dev: &mut Device) {
             repopulate_event(dev, elem.id as usize);
             dev.event_ack_used_idx = dev.event_ack_used_idx.wrapping_add(1);
             match event.event_type {
-                | EventType::Abs => {
+                EventType::Abs => {
                     let mut ev = ABS_EVENTS.take().unwrap();
                     ev.push_back(*event);
                     ABS_EVENTS.replace(ev);
                 },
-                | EventType::Key => {
+                EventType::Key => {
                     let mut ev = KEY_EVENTS.take().unwrap();
                     ev.push_back(*event);
                     KEY_EVENTS.replace(ev);
                 },
-                | _ => {},
+                _ => {},
             }
         }
         // Next, the status queue

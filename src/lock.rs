@@ -31,8 +31,8 @@ impl<'a> Mutex {
             llvm_asm!("amoswap.w.aq $0, $1, ($2)\n" : "=r"(state) : "r"(1), "r"(self) :: "volatile");
             match state {
                 // amoswap returns the OLD state of the lock.  If it was already locked, we didn't acquire it.
-                | MutexState::Locked => false,
-                | MutexState::Unlocked => true,
+                MutexState::Locked => false,
+                MutexState::Unlocked => true,
             }
         }
     }
