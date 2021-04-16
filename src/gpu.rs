@@ -24,11 +24,11 @@ use crate::{
         VIRTIO_RING_SIZE,
     },
 };
-// use alloc::boxed::Box;
 
 const F_VIRGL: u32 = 0;
 const F_EDID: u32 = 1;
 const EVENT_DISPLAY: u32 = 1 << 0;
+
 #[repr(C)]
 struct Config {
     // events_read signals pending events to the driver. The driver MUST NOT write to this field.
