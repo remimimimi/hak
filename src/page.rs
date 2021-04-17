@@ -51,7 +51,7 @@ pub struct Page {
 impl Page {
     // If this page has been marked as the final allocation,
     // this function returns true. Otherwise, it returns false.
-    pub fn is_last(&self) -> bool {
+    pub const fn is_last(&self) -> bool {
         self.flags & PageBits::Last.val() != 0
     }
 
@@ -62,7 +62,7 @@ impl Page {
     }
 
     // This is the opposite of is_taken().
-    pub fn is_free(&self) -> bool {
+    pub const fn is_free(&self) -> bool {
         !self.is_taken()
     }
 
@@ -324,7 +324,7 @@ impl Entry {
 
     // The first bit (bit index #0) is the V bit for
     // valid.
-    pub fn is_invalid(&self) -> bool {
+    pub const fn is_invalid(&self) -> bool {
         !self.is_valid()
     }
 
@@ -333,7 +333,7 @@ impl Entry {
         self.get_entry() & 0xe != 0
     }
 
-    pub fn is_branch(&self) -> bool {
+    pub const fn is_branch(&self) -> bool {
         !self.is_leaf()
     }
 

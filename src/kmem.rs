@@ -28,7 +28,7 @@ impl AllocList {
         self.flags_size & AllocListFlags::Taken.val() != 0
     }
 
-    pub fn is_free(&self) -> bool {
+    pub const fn is_free(&self) -> bool {
         !self.is_taken()
     }
 

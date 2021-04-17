@@ -161,7 +161,7 @@ impl MmioOffsets {
         self.val() / scale
     }
 
-    pub fn scale32(self) -> usize {
+    pub const fn scale32(self) -> usize {
         self.scaled(4)
     }
 }
@@ -190,19 +190,19 @@ impl StatusField {
         sf & bit.val32() != 0
     }
 
-    pub fn is_failed(sf: u32) -> bool {
+    pub const fn is_failed(sf: u32) -> bool {
         Self::test(sf, Self::Failed)
     }
 
-    pub fn needs_reset(sf: u32) -> bool {
+    pub const fn needs_reset(sf: u32) -> bool {
         Self::test(sf, Self::DeviceNeedsReset)
     }
 
-    pub fn driver_ok(sf: u32) -> bool {
+    pub const fn driver_ok(sf: u32) -> bool {
         Self::test(sf, Self::DriverOk)
     }
 
-    pub fn features_ok(sf: u32) -> bool {
+    pub const fn features_ok(sf: u32) -> bool {
         Self::test(sf, Self::FeaturesOk)
     }
 }
