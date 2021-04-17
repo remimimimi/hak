@@ -2,6 +2,12 @@ use alloc::{
     boxed::Box,
     string::String,
 };
+use core::convert::TryFrom;
+
+use num_enum::{
+    IntoPrimitive,
+    TryFromPrimitive,
+};
 
 use crate::{
     block::block_op,
@@ -39,6 +45,25 @@ use crate::{
     },
 };
 
+#[derive(TryFromPrimitive, IntoPrimitive)]
+#[repr(usize)]
+pub enum Syscall {
+    #[num_enum(alternatives = [93])]
+    Exit = 0,
+    PutChar = 2,
+    DumpRegisters = 8,
+    Sleep = 10,
+    Execv = 11,
+    Read = 63,
+    GetPid = 172,
+    BlockRead = 180,
+    GetFramebuffer = 1000,
+    TransferRectangleAndInvalidate = 1001,
+    WaitForKeyboardEvents = 1002,
+    WaitForAbsEvents = 1004,
+    GetTime = 1062,
+}
+
 /// `do_syscall`, is called from trap.rs to invoke a system call. No discernment is
 /// made here whether this is a U-mode, S-mode, or M-mode system call.
 /// Since we can't do anything unless we dereference the passed pointer,
@@ -50,229 +75,223 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
     // Libgloss expects the system call number in A7, so let's follow
     // their lead.
     // A7 is X17, so it's register number 17.
-    let syscall_number = (*frame).regs[Registers::A7 as usize];
-    match syscall_number {
-        0 | 93 => {
-            // Exit
-            delete_process((*frame).pid as u16);
+    Syscall::try_from((*frame).regs[Registers::A7 as usize]).map_or_else(
+        |e| {
+            println!("Unknown syscall number {}", e.number);
             0
         },
-        2 => {
-            // Easy putchar
-            print!("{}", (*frame).regs[Registers::A0 as usize] as u8 as char);
-            0
-        },
-        8 => {
-            dump_registers(frame);
-            mepc + 4
-        },
-        10 => {
-            // Sleep
-            set_sleeping((*frame).pid as u16, (*frame).regs[Registers::A0 as usize]);
-            0
-        },
-        11 => {
-            // execv
-            // A0 = path
-            // A1 = argv
-            let mut path_addr = (*frame).regs[Registers::A0 as usize];
-            // If the MMU is turned on, translate.
-            if (*frame).satp >> 60 != 0 {
-                let p = get_by_pid((*frame).pid as u16);
-                let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
-                path_addr = virt_to_phys(table, path_addr).unwrap();
-            }
-            // Our path address here is now a physical address. If it came in virtual,
-            // it is now physical.
-            let path_bytes = path_addr as *const u8;
-            let mut path = String::new();
-            let mut iterator: usize = 0;
-            // I really have to figure out how to change an array of bytes
-            // to a string. For now, this is very C-style and mimics strcpy.
-            loop {
-                let ch = *path_bytes.add(iterator);
-                if ch == 0 {
-                    break;
-                }
-                iterator += 1;
-                path.push(ch as char);
-            }
-            // See if we can find the path.
-            if let Ok(inode) = fs::MinixFileSystem::open(8, &path) {
-                let inode_heap = Box::new(inode);
-                // The Box above moves the Inode to a new memory location on the heap.
-                // This needs to be on the heap since we are about to hand over control
-                // to a kernel process.
-                // THERE is an issue here. If we fail somewhere inside the kernel process,
-                // we shouldn't delete our process here. However, since this is asynchronous
-                // our process will still get deleted and the error won't be reported.
-                // We have to make sure we relinquish Box control here by using into_raw.
-                // Otherwise, the Box will free the memory associated with this inode.
-                add_kernel_process_args(exec_func, Box::into_raw(inode_heap) as usize);
-                // This deletes us, which is what we want.
-                delete_process((*frame).pid as u16);
-                0
-            } else {
-                // If we get here, the path couldn't be found, or for some reason
-                // open failed. So, we return -1 and move on.
-                println!("Could not open path '{}'.", path);
-                (*frame).regs[Registers::A0 as usize] = usize::MAX;
-                mepc + 4
-            }
-        },
-        63 => {
-            // Read system call
-            // This is an asynchronous call. This will get the
-            // process going. We won't hear the answer until
-            // we an interrupt back.
-            // TODO: The buffer is a virtual memory address that
-            // needs to be translated to a physical memory location.
-            // This needs to be put into a process and ran.
-            // The buffer (regs[12]) needs to be translated when ran
-            // from a user process using virt_to_phys. If this turns
-            // out to be a page fault, we need to NOT proceed with
-            // the read!
-            // If the MMU is turned on, we have to translate the
-            // address. Eventually, I will put this code into a
-            // convenient function, but for now, it will show how
-            // translation will be done.
-            let physical_buffer = if (*frame).satp != 0 {
-                let p = get_by_pid((*frame).pid as u16);
-                let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
-                let paddr = virt_to_phys(table, (*frame).regs[12]);
-                if paddr.is_none() {
-                    (*frame).regs[Registers::A0 as usize] = usize::MAX;
-                    return 0;
-                }
-                paddr.unwrap()
-            } else {
-                (*frame).regs[Registers::A2 as usize]
-            };
-            // TODO: Not only do we need to check the buffer, but it
-            // is possible that the buffer spans multiple pages. We
-            // need to check all pages that this might span. We
-            // can't just do paddr and paddr + size, since there
-            // could be a missing page somewhere in between.
-            fs::process_read(
-                (*frame).pid as u16,
-                (*frame).regs[Registers::A0 as usize] as usize,
-                (*frame).regs[Registers::A1 as usize] as u32,
-                physical_buffer as *mut u8,
-                (*frame).regs[Registers::A3 as usize] as u32,
-                (*frame).regs[Registers::A4 as usize] as u32,
-            );
-            // If we return 0, the trap handler will schedule
-            // another process.
-            0
-        },
-        172 => {
-            // A0 = pid
-            (*frame).regs[Registers::A0 as usize] = (*frame).pid;
-            0
-        },
-        180 => {
-            set_waiting((*frame).pid as u16);
-            let _ = block_op(
-                (*frame).regs[Registers::A0 as usize],
-                (*frame).regs[Registers::A1 as usize] as *mut u8,
-                (*frame).regs[Registers::A2 as usize] as u32,
-                (*frame).regs[Registers::A3 as usize] as u64,
-                false,
-                (*frame).pid as u16,
-            );
-            0
-        },
-        // System calls 1000 and above are "special" system calls for our OS. I'll
-        // try to mimic the normal system calls below 1000 so that this OS is compatible
-        // with libraries.
-        1000 => {
-            // get framebuffer
-            // syscall_get_framebuffer(device)
-            let dev = (*frame).regs[Registers::A0 as usize];
-            (*frame).regs[Registers::A0 as usize] = 0;
-            if dev > 0 && dev <= 8 {
-                if let Some(p) = gpu::GPU_DEVICES[dev - 1].take() {
-                    let ptr = p.get_framebuffer() as usize;
+        |syscall| {
+            match syscall {
+                Syscall::Exit => {
+                    delete_process((*frame).pid as u16);
+                    0
+                },
+                Syscall::PutChar => {
+                    print!("{}", (*frame).regs[Registers::A0 as usize] as u8 as char);
+                    0
+                },
+                Syscall::DumpRegisters => {
+                    dump_registers(frame);
+                    mepc + 4
+                },
+                Syscall::Sleep => {
+                    set_sleeping((*frame).pid as u16, (*frame).regs[Registers::A0 as usize]);
+                    0
+                },
+                Syscall::Execv => {
+                    // A0 = path
+                    // A1 = argv
+                    let mut path_addr = (*frame).regs[Registers::A0 as usize];
+                    // If the MMU is turned on, translate.
+                    if (*frame).satp >> 60 != 0 {
+                        let p = get_by_pid((*frame).pid as u16);
+                        let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
+                        path_addr = virt_to_phys(table, path_addr).unwrap();
+                    }
+                    // Our path address here is now a physical address. If it came in virtual,
+                    // it is now physical.
+                    let path_bytes = path_addr as *const u8;
+                    let mut path = String::new();
+                    let mut iterator: usize = 0;
+                    // I really have to figure out how to change an array of bytes
+                    // to a string. For now, this is very C-style and mimics strcpy.
+                    loop {
+                        let ch = *path_bytes.add(iterator);
+                        if ch == 0 {
+                            break;
+                        }
+                        iterator += 1;
+                        path.push(ch as char);
+                    }
+                    // See if we can find the path.
+                    if let Ok(inode) = fs::MinixFileSystem::open(8, &path) {
+                        let inode_heap = Box::new(inode);
+                        // The Box above moves the Inode to a new memory location on the heap.
+                        // This needs to be on the heap since we are about to hand over control
+                        // to a kernel process.
+                        // THERE is an issue here. If we fail somewhere inside the kernel process,
+                        // we shouldn't delete our process here. However, since this is asynchronous
+                        // our process will still get deleted and the error won't be reported.
+                        // We have to make sure we relinquish Box control here by using into_raw.
+                        // Otherwise, the Box will free the memory associated with this inode.
+                        add_kernel_process_args(exec_func, Box::into_raw(inode_heap) as usize);
+                        // This deletes us, which is what we want.
+                        delete_process((*frame).pid as u16);
+                        0
+                    } else {
+                        // If we get here, the path couldn't be found, or for some reason
+                        // open failed. So, we return -1 and move on.
+                        println!("Could not open path '{}'.", path);
+                        (*frame).regs[Registers::A0 as usize] = usize::MAX;
+                        mepc + 4
+                    }
+                },
+                Syscall::Read => {
+                    // This is an asynchronous call. This will get the
+                    // process going. We won't hear the answer until
+                    // we an interrupt back.
+                    // TODO: The buffer is a virtual memory address that
+                    // needs to be translated to a physical memory location.
+                    // This needs to be put into a process and ran.
+                    // The buffer (regs[12]) needs to be translated when ran
+                    // from a user process using virt_to_phys. If this turns
+                    // out to be a page fault, we need to NOT proceed with
+                    // the read!
+                    // If the MMU is turned on, we have to translate the
+                    // address. Eventually, I will put this code into a
+                    // convenient function, but for now, it will show how
+                    // translation will be done.
+                    let physical_buffer = if (*frame).satp != 0 {
+                        let p = get_by_pid((*frame).pid as u16);
+                        let table = ((*p).get_table_address() as *mut Table).as_ref().unwrap();
+                        let paddr = virt_to_phys(table, (*frame).regs[12]);
+                        if paddr.is_none() {
+                            (*frame).regs[Registers::A0 as usize] = usize::MAX;
+                            return 0;
+                        }
+                        paddr.unwrap()
+                    } else {
+                        (*frame).regs[Registers::A2 as usize]
+                    };
+                    // TODO: Not only do we need to check the buffer, but it
+                    // is possible that the buffer spans multiple pages. We
+                    // need to check all pages that this might span. We
+                    // can't just do paddr and paddr + size, since there
+                    // could be a missing page somewhere in between.
+                    fs::process_read(
+                        (*frame).pid as u16,
+                        (*frame).regs[Registers::A0 as usize] as usize,
+                        (*frame).regs[Registers::A1 as usize] as u32,
+                        physical_buffer as *mut u8,
+                        (*frame).regs[Registers::A3 as usize] as u32,
+                        (*frame).regs[Registers::A4 as usize] as u32,
+                    );
+                    // If we return 0, the trap handler will schedule
+                    // another process.
+                    0
+                },
+                Syscall::GetPid => {
+                    // A0 = pid
+                    (*frame).regs[Registers::A0 as usize] = (*frame).pid;
+                    0
+                },
+                Syscall::BlockRead => {
+                    set_waiting((*frame).pid as u16);
+                    let _ = block_op(
+                        (*frame).regs[Registers::A0 as usize],
+                        (*frame).regs[Registers::A1 as usize] as *mut u8,
+                        (*frame).regs[Registers::A2 as usize] as u32,
+                        (*frame).regs[Registers::A3 as usize] as u64,
+                        false,
+                        (*frame).pid as u16,
+                    );
+                    0
+                },
+                // System calls 1000 and above are "special" system calls for our OS. I'll
+                // try to mimic the normal system calls below 1000 so that this OS is compatible
+                // with libraries.
+                Syscall::GetFramebuffer => {
+                    // syscall_get_framebuffer(device)
+                    let dev = (*frame).regs[Registers::A0 as usize];
+                    (*frame).regs[Registers::A0 as usize] = 0;
+                    if dev > 0 && dev <= 8 {
+                        if let Some(p) = gpu::GPU_DEVICES[dev - 1].take() {
+                            let ptr = p.get_framebuffer() as usize;
+                            if (*frame).satp >> 60 != 0 {
+                                let process = get_by_pid((*frame).pid as u16);
+                                let table = ((*process).get_table_address() as *mut Table).as_mut().unwrap();
+                                let num_pages = (p.get_width() * p.get_height() * 4) as usize / PAGE_SIZE;
+                                for i in 0..num_pages {
+                                    let vaddr = 0x3000_0000 + (i << 12);
+                                    let paddr = ptr + (i << 12);
+                                    map(table, vaddr, paddr, EntryBits::UserReadWrite as i64, 0);
+                                }
+                                gpu::GPU_DEVICES[dev - 1].replace(p);
+                            }
+                            (*frame).regs[Registers::A0 as usize] = 0x3000_0000;
+                        }
+                    }
+                    0
+                },
+                Syscall::TransferRectangleAndInvalidate => {
+                    let dev = (*frame).regs[Registers::A0 as usize];
+                    let x = (*frame).regs[Registers::A1 as usize] as u32;
+                    let y = (*frame).regs[Registers::A2 as usize] as u32;
+                    let width = (*frame).regs[Registers::A3 as usize] as u32;
+                    let height = (*frame).regs[Registers::A4 as usize] as u32;
+                    gpu::transfer(dev, x, y, width, height);
+                    0
+                },
+                Syscall::WaitForKeyboardEvents => {
+                    let mut ev = KEY_EVENTS.take().unwrap();
+                    let max_events = (*frame).regs[Registers::A1 as usize];
+                    let vaddr = (*frame).regs[Registers::A0 as usize] as *const Event;
                     if (*frame).satp >> 60 != 0 {
                         let process = get_by_pid((*frame).pid as u16);
                         let table = ((*process).get_table_address() as *mut Table).as_mut().unwrap();
-                        let num_pages = (p.get_width() * p.get_height() * 4) as usize / PAGE_SIZE;
-                        for i in 0..num_pages {
-                            let vaddr = 0x3000_0000 + (i << 12);
-                            let paddr = ptr + (i << 12);
-                            map(table, vaddr, paddr, EntryBits::UserReadWrite as i64, 0);
+                        (*frame).regs[Registers::A0 as usize] = 0;
+                        for i in 0..if max_events <= ev.len() { max_events } else { ev.len() } {
+                            let paddr = virt_to_phys(table, vaddr.add(i) as usize);
+                            if paddr.is_none() {
+                                break;
+                            }
+                            let paddr = paddr.unwrap() as *mut Event;
+                            *paddr = ev.pop_front().unwrap();
+                            (*frame).regs[Registers::A0 as usize] += 1;
                         }
-                        gpu::GPU_DEVICES[dev - 1].replace(p);
                     }
-                    (*frame).regs[Registers::A0 as usize] = 0x3000_0000;
-                }
-            }
-            0
-        },
-        1001 => {
-            // transfer rectangle and invalidate
-            let dev = (*frame).regs[Registers::A0 as usize];
-            let x = (*frame).regs[Registers::A1 as usize] as u32;
-            let y = (*frame).regs[Registers::A2 as usize] as u32;
-            let width = (*frame).regs[Registers::A3 as usize] as u32;
-            let height = (*frame).regs[Registers::A4 as usize] as u32;
-            gpu::transfer(dev, x, y, width, height);
-            0
-        },
-        1002 => {
-            // wait for keyboard events
-            let mut ev = KEY_EVENTS.take().unwrap();
-            let max_events = (*frame).regs[Registers::A1 as usize];
-            let vaddr = (*frame).regs[Registers::A0 as usize] as *const Event;
-            if (*frame).satp >> 60 != 0 {
-                let process = get_by_pid((*frame).pid as u16);
-                let table = ((*process).get_table_address() as *mut Table).as_mut().unwrap();
-                (*frame).regs[Registers::A0 as usize] = 0;
-                for i in 0..if max_events <= ev.len() { max_events } else { ev.len() } {
-                    let paddr = virt_to_phys(table, vaddr.add(i) as usize);
-                    if paddr.is_none() {
-                        break;
+                    KEY_EVENTS.replace(ev);
+                    0
+                },
+                Syscall::WaitForAbsEvents => {
+                    let mut ev = ABS_EVENTS.take().unwrap();
+                    let max_events = (*frame).regs[Registers::A1 as usize];
+                    let v_addr = (*frame).regs[Registers::A0 as usize] as *const Event;
+                    if (*frame).satp >> 60 != 0 {
+                        let process = get_by_pid((*frame).pid as u16);
+                        let table = ((*process).get_table_address() as *mut Table).as_mut().unwrap();
+                        (*frame).regs[Registers::A0 as usize] = 0;
+                        for i in 0..if max_events <= ev.len() { max_events } else { ev.len() } {
+                            let paddr = virt_to_phys(table, v_addr.add(i) as usize);
+                            if paddr.is_none() {
+                                break;
+                            }
+                            let p_addr = paddr.unwrap() as *mut Event;
+                            *p_addr = ev.pop_front().unwrap();
+                            (*frame).regs[Registers::A0 as usize] += 1;
+                        }
                     }
-                    let paddr = paddr.unwrap() as *mut Event;
-                    *paddr = ev.pop_front().unwrap();
-                    (*frame).regs[Registers::A0 as usize] += 1;
-                }
+                    ABS_EVENTS.replace(ev);
+                    0
+                },
+                Syscall::GetTime => {
+                    // gettime
+                    (*frame).regs[Registers::A0 as usize] = crate::cpu::get_mtime();
+                    0
+                },
             }
-            KEY_EVENTS.replace(ev);
-            0
         },
-        1004 => {
-            // wait for abs events
-            let mut ev = ABS_EVENTS.take().unwrap();
-            let max_events = (*frame).regs[Registers::A1 as usize];
-            let v_addr = (*frame).regs[Registers::A0 as usize] as *const Event;
-            if (*frame).satp >> 60 != 0 {
-                let process = get_by_pid((*frame).pid as u16);
-                let table = ((*process).get_table_address() as *mut Table).as_mut().unwrap();
-                (*frame).regs[Registers::A0 as usize] = 0;
-                for i in 0..if max_events <= ev.len() { max_events } else { ev.len() } {
-                    let paddr = virt_to_phys(table, v_addr.add(i) as usize);
-                    if paddr.is_none() {
-                        break;
-                    }
-                    let p_addr = paddr.unwrap() as *mut Event;
-                    *p_addr = ev.pop_front().unwrap();
-                    (*frame).regs[Registers::A0 as usize] += 1;
-                }
-            }
-            ABS_EVENTS.replace(ev);
-            0
-        },
-        1062 => {
-            // gettime
-            (*frame).regs[Registers::A0 as usize] = crate::cpu::get_mtime();
-            0
-        },
-        _ => {
-            println!("Unknown syscall number {}", syscall_number);
-            0
-        },
-    }
+    )
 }
 
 extern "C" {
