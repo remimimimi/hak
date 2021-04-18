@@ -21,30 +21,6 @@
     clippy::cargo
 )]
 
-pub mod assembly;
-pub mod block;
-pub mod buffer;
-pub mod cpu;
-pub mod elf;
-pub mod fs;
-pub mod gpu;
-pub mod input;
-pub mod kmem;
-pub mod lock;
-pub mod page;
-pub mod plic;
-pub mod process;
-pub mod rng;
-pub mod sched;
-pub mod syscall;
-pub mod test;
-pub mod trap;
-pub mod uart;
-pub mod virtio;
-
-#[lang = "eh_personality"]
-extern "C" fn eh_personality() {}
-
 // #[macro_use]
 extern crate alloc;
 // This is experimental and requires alloc_prelude as a feature
@@ -69,6 +45,30 @@ macro_rules! println {
     );
 }
 
+pub mod assembly;
+pub mod block;
+pub mod buffer;
+pub mod cpu;
+pub mod elf;
+pub mod fs;
+pub mod gpu;
+pub mod input;
+pub mod kmem;
+pub mod lock;
+pub mod page;
+pub mod plic;
+pub mod process;
+pub mod rng;
+pub mod sched;
+pub mod syscall;
+pub mod test;
+pub mod trap;
+pub mod uart;
+pub mod virtio;
+
+#[lang = "eh_personality"]
+extern "C" fn eh_personality() {}
+
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     print!("Aborting: ");
@@ -92,8 +92,9 @@ extern "C" {
     fn switch_to_user(frame: usize) -> !;
 }
 
-/// Switch to user is an assembly function that loads
-/// a frame. Since it will jump to another program counter,
+/// Load a frame.
+///
+/// Since it will jump to another program counter,
 /// it will never return back here. We don't care if we leak
 /// the stack, since we will recapture the stack during `m_trap`.
 fn rust_switch_to_user(frame: usize) -> ! {
