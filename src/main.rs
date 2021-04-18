@@ -45,27 +45,6 @@ macro_rules! println {
     );
 }
 
-pub mod assembly;
-pub mod block;
-pub mod buffer;
-pub mod cpu;
-pub mod elf;
-pub mod fs;
-pub mod gpu;
-pub mod input;
-pub mod kmem;
-pub mod lock;
-pub mod page;
-pub mod plic;
-pub mod process;
-pub mod rng;
-pub mod sched;
-pub mod syscall;
-pub mod test;
-pub mod trap;
-pub mod uart;
-pub mod virtio;
-
 #[lang = "eh_personality"]
 extern "C" fn eh_personality() {}
 
@@ -127,7 +106,7 @@ extern "C" fn kinit() {
     // Test the block driver!
     process::add_kernel_process(test::test);
     // Get the GPU going
-    gpu::init(6);
+    virtio::gpu::init(6);
     // We schedule the next context switch using a multiplier of 1
     // Block testing code removed.
     trap::schedule_next_context_switch(1);
@@ -139,3 +118,20 @@ extern "C" fn kinit_hart(_hartid: usize) {
     // We aren't going to do anything here until we get SMP going.
     // All non-0 harts initialize here.
 }
+
+pub mod assembly;
+pub mod buffer;
+pub mod cpu;
+pub mod elf;
+pub mod fs;
+pub mod kmem;
+pub mod lock;
+pub mod page;
+pub mod plic;
+pub mod process;
+pub mod sched;
+pub mod syscall;
+pub mod test;
+pub mod trap;
+pub mod uart;
+pub mod virtio;

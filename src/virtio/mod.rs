@@ -1,14 +1,13 @@
 use core::mem::size_of;
 
 use crate::{
-    block,
-    block::setup_block_device,
-    gpu,
-    gpu::setup_gpu_device,
-    input,
-    input::setup_input_device,
     page::PAGE_SIZE,
-    rng::setup_entropy_device,
+    virtio::{
+        block::setup_block_device,
+        gpu::setup_gpu_device,
+        input::setup_input_device,
+        rng::setup_entropy_device,
+    },
 };
 
 // Flags
@@ -365,3 +364,8 @@ pub fn handle_interrupt(interrupt: u32) {
         }
     }
 }
+
+pub mod block;
+pub mod gpu;
+pub mod input;
+pub mod rng;

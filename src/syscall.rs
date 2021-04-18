@@ -10,7 +10,6 @@ use num_enum::{
 };
 
 use crate::{
-    block::block_op,
     buffer::Buffer,
     cpu::{
         dump_registers,
@@ -19,14 +18,6 @@ use crate::{
     },
     elf,
     fs,
-    gpu,
-    input::{
-        Event,
-        ABS_EVENTS,
-        ABS_OBSERVERS,
-        KEY_EVENTS,
-        KEY_OBSERVERS,
-    },
     page::{
         map,
         virt_to_phys,
@@ -42,6 +33,17 @@ use crate::{
         set_waiting,
         PROCESS_LIST,
         PROCESS_LIST_MUTEX,
+    },
+    virtio::{
+        block::block_op,
+        gpu,
+        input::{
+            Event,
+            ABS_EVENTS,
+            ABS_OBSERVERS,
+            KEY_EVENTS,
+            KEY_OBSERVERS,
+        },
     },
 };
 
