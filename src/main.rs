@@ -10,14 +10,37 @@
     const_raw_ptr_to_usize_cast,
     lang_items
 )]
-// #![warn(clippy::all)]
-// #![warn(clippy::correctness)]
-// #![warn(clippy::style)]
-// #![warn(clippy::restriction)]
-// #![warn(clippy::perf)]
-// #![warm(clippy::nursery)]
-// #![warn(clippy::pedantic)]
-// #![warm(clippy::cargo)]
+#![warn(
+    clippy::correctness,
+    clippy::pedantic,
+    clippy::style,
+    clippy::restriction,
+    clippy::complexity,
+    clippy::perf,
+    clippy::nursery,
+    clippy::cargo
+)]
+
+pub mod assembly;
+pub mod block;
+pub mod buffer;
+pub mod cpu;
+pub mod elf;
+pub mod fs;
+pub mod gpu;
+pub mod input;
+pub mod kmem;
+pub mod lock;
+pub mod page;
+pub mod plic;
+pub mod process;
+pub mod rng;
+pub mod sched;
+pub mod syscall;
+pub mod test;
+pub mod trap;
+pub mod uart;
+pub mod virtio;
 
 #[lang = "eh_personality"]
 extern "C" fn eh_personality() {}
@@ -27,9 +50,6 @@ extern crate alloc;
 // This is experimental and requires alloc_prelude as a feature
 // use alloc::prelude::v1::*;
 
-// ///////////////////////////////////
-// / RUST MACROS
-// ///////////////////////////////////
 #[macro_export]
 macro_rules! print {
     ($($args:tt)+) => ({
@@ -37,22 +57,17 @@ macro_rules! print {
         let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
     });
 }
+
 #[macro_export]
 macro_rules! println {
-    () => ({
-        print!("\r\n")
-    });
-    ($fmt:expr) => ({
+    () => (print!("\r\n"));
+    ($fmt:expr) => (
         print!(concat!($fmt, "\r\n"))
-    });
-    ($fmt:expr, $($args:tt)+) => ({
+    );
+    ($fmt:expr, $($args:tt)+) => (
         print!(concat!($fmt, "\r\n"), $($args)+)
-    });
+    );
 }
-
-// ///////////////////////////////////
-// / LANGUAGE STRUCTURES / FUNCTIONS
-// ///////////////////////////////////
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
@@ -123,28 +138,3 @@ extern "C" fn kinit_hart(_hartid: usize) {
     // We aren't going to do anything here until we get SMP going.
     // All non-0 harts initialize here.
 }
-
-// ///////////////////////////////////
-// / RUST MODULES
-// ///////////////////////////////////
-
-pub mod assembly;
-pub mod block;
-pub mod buffer;
-pub mod cpu;
-pub mod elf;
-pub mod fs;
-pub mod gpu;
-pub mod input;
-pub mod kmem;
-pub mod lock;
-pub mod page;
-pub mod plic;
-pub mod process;
-pub mod rng;
-pub mod sched;
-pub mod syscall;
-pub mod test;
-pub mod trap;
-pub mod uart;
-pub mod virtio;
