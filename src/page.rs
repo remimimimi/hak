@@ -110,7 +110,7 @@ pub fn init() {
 }
 
 /// Allocate a page or multiple pages
-/// pages: the number of `PAGE_SIZE` pages to allocate
+/// pages: the number of [`PAGE_SIZE`] pages to allocate
 pub fn alloc(pages: usize) -> *mut u8 {
     // We have to find a contiguous allocation of pages
     assert!(pages > 0);
@@ -167,7 +167,7 @@ pub fn alloc(pages: usize) -> *mut u8 {
 
 /// Allocate and zero a page or multiple pages
 /// pages: the number of pages to allocate
-/// Each page is `PAGE_SIZE` which is calculated as 1 << `PAGE_ORDER`
+/// Each page is [`PAGE_SIZE`] which is calculated as 1 << `PAGE_ORDER`
 /// On RISC-V, this typically will be 4,096 bytes.
 pub fn zalloc(pages: usize) -> *mut u8 {
     // Allocate and zero a page.

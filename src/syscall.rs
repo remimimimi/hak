@@ -45,6 +45,7 @@ use crate::{
     },
 };
 
+/// Contain all supported system calls
 #[derive(TryFromPrimitive, IntoPrimitive)]
 #[repr(usize)]
 pub enum Syscall {
@@ -64,7 +65,7 @@ pub enum Syscall {
     GetTime = 1062,
 }
 
-/// `do_syscall`, is called from trap.rs to invoke a system call. No discernment is
+/// [`do_syscall`], is called from trap.rs to invoke a system call. No discernment is
 /// made here whether this is a U-mode, S-mode, or M-mode system call.
 /// Since we can't do anything unless we dereference the passed pointer,
 /// I went ahead and made the entire function unsafe.

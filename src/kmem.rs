@@ -252,7 +252,7 @@ unsafe impl GlobalAlloc for OsGlobalAlloc {
 static GA: OsGlobalAlloc = OsGlobalAlloc {};
 
 #[alloc_error_handler]
-/// If for some reason alloc() in the global allocator gets `null_mut()`,
+/// If for some reason [`GlobalAlloc::alloc()`] gets [`null_mut()`],
 /// then we come here. This is a divergent function, so we call panic to
 /// let the tester know what's going on.
 pub fn alloc_error(l: Layout) -> ! {

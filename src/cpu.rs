@@ -114,7 +114,7 @@ pub struct TrapFrame {
 
 /// Rust requires that we initialize our structures
 /// because of the move semantics. What'll happen below
-/// is Rust will construct a new `TrapFrame` and move it
+/// is Rust will construct a new [`TrapFrame`] and move it
 /// out of the `zero()` function below. Rust contains two
 /// different "selfs" where self can refer to the object
 /// in memory or Self (capital S) which refers to the
@@ -313,8 +313,7 @@ pub unsafe fn memcpy(dest: *mut u8, src: *const u8, bytes: usize) {
     }
 }
 
-/// Dumps the registers of a given trap frame. This is NOT the
-/// current CPU registers!
+/// Dumps the registers of a given trap frame. This is NOT the current CPU registers!
 pub fn dump_registers(frame: *const TrapFrame) {
     print!("   ");
     for i in 1..32 {
