@@ -282,7 +282,7 @@ pub fn probe() {
                 // DeviceID 2 is a block device
                 2 => {
                     print!("block device...");
-                    if setup_block_device(ptr) {
+                    if unsafe { setup_block_device(ptr) } {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Block));
@@ -295,7 +295,7 @@ pub fn probe() {
                 // DeviceID 4 is a random number generator device
                 4 => {
                     print!("entropy device...");
-                    if setup_entropy_device(ptr) {
+                    if unsafe { setup_entropy_device(ptr) } {
                         println!("setup succeeded!");
                     } else {
                         println!("setup failed.");
@@ -304,7 +304,7 @@ pub fn probe() {
                 // DeviceID 16 is a GPU device
                 16 => {
                     print!("GPU device...");
-                    if setup_gpu_device(ptr) {
+                    if unsafe { setup_gpu_device(ptr) } {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Gpu));
@@ -317,7 +317,7 @@ pub fn probe() {
                 // DeviceID 18 is an input device
                 18 => {
                     print!("input device...");
-                    if setup_input_device(ptr) {
+                    if unsafe { setup_input_device(ptr) } {
                         let idx = (addr - MMIO_VIRTIO_START) >> 12;
                         unsafe {
                             VIRTIO_DEVICES[idx] = Some(VirtioDevice::new_with(DeviceTypes::Input));

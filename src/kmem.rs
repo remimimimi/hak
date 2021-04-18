@@ -14,6 +14,7 @@ use crate::page::{
 enum AllocListFlags {
     Taken = 1 << 63,
 }
+
 impl AllocListFlags {
     pub const fn val(self) -> usize {
         self as usize
