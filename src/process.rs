@@ -193,7 +193,7 @@ fn init_process() {
             // being ran as a kernel process. If we ran this as a
             // user process, it'd need a system call to execute a
             // privileged instruction.
-            unsafe { llvm_asm!("wfi") };
+            unsafe { asm!("wfi") };
         }
     }
 }
@@ -314,7 +314,7 @@ fn ra_delete_proc() {
     syscall_exit();
 }
 
-/// This is the same as the `add_kernel_process` function, except you can pass
+/// This is the same as the [`add_kernel_process`] function, except you can pass
 /// arguments. Typically, this will be a memory address on the heap where
 /// arguments can be found.
 pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {

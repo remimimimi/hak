@@ -3,7 +3,6 @@
 #![feature(
     panic_info_message,
     asm,
-    llvm_asm,
     global_asm,
     allocator_api,
     alloc_error_handler,

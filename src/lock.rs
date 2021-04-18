@@ -1,8 +1,13 @@
+use core::convert::TryFrom;
+
+use num_enum::TryFromPrimitive;
+
 use crate::syscall::syscall_sleep;
 
 pub const DEFAULT_LOCK_SLEEP: usize = 10000;
 
 #[repr(u32)]
+#[derive(TryFromPrimitive)]
 pub enum MutexState {
     Unlocked = 0,
     Locked = 1,
@@ -28,12 +33,13 @@ impl<'a> Mutex {
     /// otherwise it will return true if the mutex was acquired.
     pub fn try_lock(&mut self) -> bool {
         unsafe {
-            let state: MutexState;
-            llvm_asm!("amoswap.w.aq $0, $1, ($2)\n" : "=r"(state) : "r"(1), "r"(self) :: "volatile");
-            match state {
+            let state: u32;
+            asm!("amoswap.w.aq {}, {}, ({})", lateout(reg) state, in(reg) 1, in(reg) self);
+            match MutexState::try_from(state) {
                 // amoswap returns the OLD state of the lock.  If it was already locked, we didn't acquire it.
-                MutexState::Locked => false,
-                MutexState::Unlocked => true,
+                Ok(MutexState::Locked) => false,
+                Ok(MutexState::Unlocked) => true,
+                _ => unreachable!(),
             }
         }
     }
@@ -55,7 +61,7 @@ impl<'a> Mutex {
     /// Unlock a mutex without regard for its previous state.
     pub fn unlock(&mut self) {
         unsafe {
-            llvm_asm!("amoswap.w.rl zero, zero, ($0)" :: "r"(self) :: "volatile");
+            asm!("amoswap.w.rl zero, zero, ({})", in(reg) self);
         }
     }
 }
