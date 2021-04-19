@@ -1,16 +1,26 @@
 use core::convert::TryFrom;
 
-use num_enum::TryFromPrimitive;
-
 use crate::syscall::syscall_sleep;
 
 pub const DEFAULT_LOCK_SLEEP: usize = 10000;
 
 #[repr(u32)]
-#[derive(TryFromPrimitive)]
 pub enum MutexState {
     Unlocked = 0,
     Locked = 1,
+}
+
+impl TryFrom<u32> for MutexState {
+    type Error = u32;
+
+    fn try_from(state: u32) -> Result<Self, Self::Error> {
+        match state {
+            0 => Ok(Self::Unlocked),
+            1 => Ok(Self::Locked),
+            _ => unreachable!(),
+            // unexpected_state => Err(unexpected_state),
+        }
+    }
 }
 
 #[repr(C)]
