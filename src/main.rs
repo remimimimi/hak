@@ -58,6 +58,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     }
     abort();
 }
+
 #[no_mangle]
 extern "C" fn abort() -> ! {
     loop {
@@ -81,6 +82,7 @@ fn rust_switch_to_user(frame: usize) -> ! {
         switch_to_user(frame);
     }
 }
+
 // ///////////////////////////////////
 // / ENTRY POINT
 // ///////////////////////////////////
@@ -113,6 +115,7 @@ extern "C" fn kinit() {
     rust_switch_to_user(sched::schedule());
     // switch_to_user will not return, so we should never get here
 }
+
 #[no_mangle]
 extern "C" fn kinit_hart(_hartid: usize) {
     // We aren't going to do anything here until we get SMP going.
