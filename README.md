@@ -1,4 +1,5 @@
 # `romlin`
+
 New type operating system
 
 # Building and running
@@ -20,7 +21,6 @@ one by typing the following.
 ```sh
 fallocate -l 32M hdd.dsk
 ```
-
 
 ## Running
 To run, you can just use normal `cargo run` or `cargo run --release` for release mode
