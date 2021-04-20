@@ -1,12 +1,17 @@
-// The frequency of QEMU is 10 MHz
+//! Module contain RISC-V64 related abstractions above
+//! some cpu instructions, registers. Also there [`cpu::TrapFrame`]
+//! for process context capture.
+/// The frequency of QEMU timer interrupt
 pub const FREQ: u64 = 10_000_000;
-// Let's do this 250 times per second for switching
+/// Switch process context of process 250 time per second
 pub const CONTEXT_SWITCH_TIME: u64 = FREQ / 500;
 
+/// Memory management unit virtual addressing mode
+///
 /// In 64-bit mode, we're given three different modes for the MMU:
-/// 0 - The MMU is off -- no protection and no translation PA = VA
-/// 8 - This is Sv39 mode -- 39-bit virtual addresses
-/// 9 - This is Sv48 mode -- 48-bit virtual addresses
+///  * 0 - The MMU is off -- no protection and no translation PA = VA
+///  * 8 - This is Sv39 mode -- 39-bit virtual addresses
+///  * 9 - This is Sv48 mode -- 48-bit virtual addresses
 #[repr(usize)]
 pub enum SatpMode {
     Off = 0,
@@ -14,6 +19,7 @@ pub enum SatpMode {
     Sv48 = 9,
 }
 
+/// [Processor operating mode](https://en.wikipedia.org/wiki/CPU_modes)
 #[repr(usize)]
 pub enum CpuMode {
     User = 0,
@@ -21,6 +27,7 @@ pub enum CpuMode {
     Machine = 3,
 }
 
+/// General purpose registers of RISC-V architecture
 #[repr(usize)]
 pub enum Registers {
     Zero = 0,
@@ -57,7 +64,7 @@ pub enum Registers {
     T6,
 }
 
-// Floating point registers
+/// Floating point registers of RISC-V architecture
 #[repr(usize)]
 pub enum FRegisters {
     Ft0,
@@ -94,6 +101,8 @@ pub enum FRegisters {
     Ft11,
 }
 
+/// Context of process for process context switching
+///
 /// The trap frame is set into a structure
 /// and packed into each hart's mscratch register.
 /// This allows for quick reference and full
@@ -102,14 +111,22 @@ pub enum FRegisters {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TrapFrame {
-    pub regs: [usize; 32],  // 0 - 255
+    /// General purpose registers
+    pub regs: [usize; 32], // 0 - 255
+    /// Floating point registers
     pub fregs: [usize; 32], // 256 - 511
-    pub satp: usize,        // 512 - 519
-    pub pc: usize,          // 520
-    pub hartid: usize,      // 528
-    pub qm: usize,          // 536
-    pub pid: usize,         // 544
-    pub mode: usize,        // 552
+    /// Supervisor address tranlation and protection
+    pub satp: usize, // 512 - 519
+    /// Program counter
+    pub pc: usize, // 520
+    /// Hardware thread id
+    pub hartid: usize, // 528
+    /// TODO
+    pub qm: usize, // 536
+    /// Process id
+    pub pid: usize, // 544
+    /// Address translation mode scheme
+    pub mode: usize, // 552
 }
 
 /// Rust requires that we initialize our structures
@@ -135,6 +152,8 @@ impl TrapFrame {
     }
 }
 
+/// Build Supervisor Address Translation and Protection register
+///
 /// The SATP register contains three fields: mode, address space id, and
 /// the first level table address (level 2 for Sv39). This function
 /// helps make the 64-bit register contents based on those three
@@ -143,6 +162,7 @@ pub const fn build_satp(mode: SatpMode, asid: usize, addr: usize) -> usize {
     (mode as usize) << 60 | (asid & 0xffff) << 44 | (addr >> 12) & 0xff_ffff_ffff
 }
 
+/// Read Machine HARdware Thread id
 pub fn mhartid_read() -> usize {
     unsafe {
         let rval;
@@ -150,6 +170,8 @@ pub fn mhartid_read() -> usize {
         rval
     }
 }
+
+/// Read Machine Interrupt-Enable register
 pub fn mie_read() -> usize {
     unsafe {
         let rval;
@@ -158,18 +180,21 @@ pub fn mie_read() -> usize {
     }
 }
 
+/// Set Machine Interrupt-Enable register
 pub fn mie_write(val: usize) {
     unsafe {
         asm!("csrw mie, {}", in(reg) val);
     }
 }
 
+/// Set Machine Status register
 pub fn mstatus_write(val: usize) {
     unsafe {
         asm!("csrw mstatus, {}", in(reg) val);
     }
 }
 
+/// Read Machine Status register
 pub fn mstatus_read() -> usize {
     unsafe {
         let rval;
@@ -178,12 +203,14 @@ pub fn mstatus_read() -> usize {
     }
 }
 
+/// Set Supervisor Trap handler base address
 pub fn stvec_write(val: usize) {
     unsafe {
         asm!("csrw stvec, {}", in(reg) val);
     }
 }
 
+/// Read Supervisor Trap handler base address
 pub fn stvec_read() -> usize {
     unsafe {
         let rval;
@@ -192,12 +219,14 @@ pub fn stvec_read() -> usize {
     }
 }
 
+/// Set Machine Scratch register
 pub fn mscratch_write(val: usize) {
     unsafe {
         asm!("csrw mscratch, {}", in(reg) val);
     }
 }
 
+/// Read Machine Scratch register
 pub fn mscratch_read() -> usize {
     unsafe {
         let rval;
@@ -206,6 +235,7 @@ pub fn mscratch_read() -> usize {
     }
 }
 
+/// Swap value of Machine Scratch register
 pub fn mscratch_swap(to: usize) -> usize {
     unsafe {
         let from;
@@ -214,12 +244,14 @@ pub fn mscratch_swap(to: usize) -> usize {
     }
 }
 
+/// Set Supervisor Scratch register
 pub fn sscratch_write(val: usize) {
     unsafe {
         asm!("csrw sscratch, {}", in(reg) val);
     }
 }
 
+/// Read Supervisor Scratch register
 pub fn sscratch_read() -> usize {
     unsafe {
         let rval;
@@ -228,6 +260,7 @@ pub fn sscratch_read() -> usize {
     }
 }
 
+/// Swap value of Supervisor Scratch register
 pub fn sscratch_swap(to: usize) -> usize {
     unsafe {
         let from;
@@ -236,12 +269,14 @@ pub fn sscratch_swap(to: usize) -> usize {
     }
 }
 
+/// Set Machine Exception Program Counter register
 pub fn mepc_write(val: usize) {
     unsafe {
         asm!("csrw mepc, {}", in(reg) val);
     }
 }
 
+/// Read Machine Exception Program Counter register
 pub fn mepc_read() -> usize {
     unsafe {
         let rval;
@@ -250,12 +285,14 @@ pub fn mepc_read() -> usize {
     }
 }
 
+/// Set Supervisor Exception Program Counter register
 pub fn sepc_write(val: usize) {
     unsafe {
         asm!("csrw sepc, {}", in(reg) val);
     }
 }
 
+/// Read Supervisor Exception Program Counter register
 pub fn sepc_read() -> usize {
     unsafe {
         let rval;
@@ -264,12 +301,14 @@ pub fn sepc_read() -> usize {
     }
 }
 
+/// Set Supervisor Address Translation and Protection register
 pub fn satp_write(val: usize) {
     unsafe {
         asm!("csrw satp, {}", in(reg) val);
     }
 }
 
+/// Read Supervisor Address Translation and Protection register
 pub fn satp_read() -> usize {
     unsafe {
         let rval;
@@ -278,9 +317,9 @@ pub fn satp_read() -> usize {
     }
 }
 
-/// Take a hammer to the page tables and synchronize
-/// all of them. This essentially flushes the entire
-/// TLB.
+/// Take a hammer to the page tables and synchronize all of them.
+///
+/// This essentially flushes the entire TLB.
 pub fn satp_fence(vaddr: usize, asid: usize) {
     unsafe {
         asm!("sfence.vma {}, {}", in(reg) vaddr, in(reg) asid);
@@ -288,6 +327,7 @@ pub fn satp_fence(vaddr: usize, asid: usize) {
 }
 
 /// Synchronize based on the address space identifier
+///
 /// This allows us to fence a particular process rather
 /// than the entire TLB.
 /// The RISC-V documentation calls this a TLB flush +.
@@ -300,8 +340,10 @@ pub fn satp_fence_asid(asid: usize) {
     }
 }
 
+/// Memory mapped value of machine timer register
 const MMIO_MTIME: *const u64 = 0x0200_BFF8 as *const u64;
 
+/// Give Machine Timer value
 pub fn get_mtime() -> usize {
     unsafe { (*MMIO_MTIME) as usize }
 }
@@ -313,7 +355,7 @@ pub unsafe fn memcpy(dest: *mut u8, src: *const u8, bytes: usize) {
     }
 }
 
-/// Dumps the registers of a given trap frame. This is NOT the current CPU registers!
+/// Dumps the registers of a given [`TrapFrame`]. This is NOT the current CPU registers!
 pub fn dump_registers(frame: *const TrapFrame) {
     print!("   ");
     for i in 1..32 {
