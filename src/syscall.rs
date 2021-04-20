@@ -1,6 +1,6 @@
 //! # Syscall
 //! We should implement some system calls for compatability with libgloss and
-//! respectivly with newlib. So there's list of libgloss syscall
+//! respectivly with newlib. So there's list of libgloss syscalls
 //! ```
 //! // These system call numbers come from libgloss so that we can use newlib
 //! // for our system calls.
