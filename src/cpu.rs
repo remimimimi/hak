@@ -1,6 +1,8 @@
 //! Module contain RISC-V64 related abstractions above
 //! some cpu instructions, registers. Also there [`cpu::TrapFrame`]
 //! for process context capture.
+//!
+//! Check [RISC-V specifications](https://riscv.org/technical/specifications/) for further research
 /// The frequency of QEMU timer interrupt
 pub const FREQ: u64 = 10_000_000;
 /// Switch process context of process 250 time per second
