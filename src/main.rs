@@ -26,6 +26,10 @@ extern crate alloc;
 // This is experimental and requires alloc_prelude as a feature
 // use alloc::prelude::v1::*;
 
+/// Std println alternative for kernel debug without newline
+///
+/// Uses uart under the hood to print characters in terminal in
+/// host machine
 #[macro_export]
 macro_rules! print {
     ($($args:tt)+) => ({
@@ -34,6 +38,7 @@ macro_rules! print {
     });
 }
 
+/// Std println alternative for kernel debug with newline
 #[macro_export]
 macro_rules! println {
     () => (print!("\r\n"));
@@ -45,9 +50,13 @@ macro_rules! println {
     );
 }
 
+/// Exception handler presonality
+///
+/// Empty function for compiler
 #[lang = "eh_personality"]
 extern "C" fn eh_personality() {}
 
+/// Custom panic handler
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     print!("Aborting: ");
@@ -59,6 +68,10 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     abort();
 }
 
+/// Never return function that waits for interrupt
+///
+/// Used in `panic` to handle end of kernel
+/// execution
 #[no_mangle]
 extern "C" fn abort() -> ! {
     loop {
@@ -83,9 +96,7 @@ fn rust_switch_to_user(frame: usize) -> ! {
     }
 }
 
-// ///////////////////////////////////
-// / ENTRY POINT
-// ///////////////////////////////////
+/// Kernel entry point
 #[no_mangle]
 extern "C" fn kinit() {
     uart::Uart::new(0x1000_0000).init();
@@ -116,6 +127,7 @@ extern "C" fn kinit() {
     // switch_to_user will not return, so we should never get here
 }
 
+/// Function for hardware thread(hart) initialization
 #[no_mangle]
 extern "C" fn kinit_hart(_hartid: usize) {
     // We aren't going to do anything here until we get SMP going.
