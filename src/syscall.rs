@@ -394,7 +394,7 @@ extern "C" {
     ) -> usize;
 }
 
-/// Wrapper over [`make_syscall`] to reduce [`unsafe`] blocks usage
+/// Wrapper over [`make_syscall`] to reduce `unsafe` blocks usage
 fn do_make_syscall(
     syscall_number: usize,
     arg0: usize,
