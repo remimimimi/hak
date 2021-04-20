@@ -4,11 +4,6 @@ use alloc::{
 };
 use core::convert::TryFrom;
 
-use num_enum::{
-    IntoPrimitive,
-    TryFromPrimitive,
-};
-
 use crate::{
     buffer::Buffer,
     cpu::{
@@ -48,16 +43,14 @@ use crate::{
 };
 
 /// Contain all supported system calls
-#[derive(TryFromPrimitive, IntoPrimitive)]
 #[repr(usize)]
 pub enum Syscall {
-    #[num_enum(alternatives = [0])]
-    Exit = 93,
     PutChar = 2,
     DumpRegisters = 8,
     Sleep = 10,
     Execv = 11,
     Read = 63,
+    _Exit = 93,
     GetPid = 172,
     BlockRead = 180,
     GetFramebuffer = 1000,
@@ -65,6 +58,44 @@ pub enum Syscall {
     WaitForKeyboardEvents = 1002,
     WaitForAbsEvents = 1004,
     GetTime = 1062,
+}
+
+/// Convert [`usize`] to [`Syscall`]
+///
+/// If value equal to [`Syscall`] descriminant
+/// then we return `Ok(Syscall::Variant)` else
+/// we return `Err(give_code)``
+impl TryFrom<usize> for Syscall {
+    type Error = usize;
+
+    fn try_from(syscall: usize) -> Result<Self, Self::Error> {
+        match syscall {
+            2 => Ok(Self::PutChar),
+            8 => Ok(Self::DumpRegisters),
+            10 => Ok(Self::Sleep),
+            11 => Ok(Self::Execv),
+            63 => Ok(Self::Read),
+            93 => Ok(Self::_Exit),
+            172 => Ok(Self::GetPid),
+            180 => Ok(Self::BlockRead),
+            1000 => Ok(Self::GetFramebuffer),
+            1001 => Ok(Self::TransferRectangleAndInvalidate),
+            1002 => Ok(Self::WaitForKeyboardEvents),
+            1004 => Ok(Self::WaitForAbsEvents),
+            1062 => Ok(Self::GetTime),
+            unexpected_syscal => Err(unexpected_syscal),
+        }
+    }
+}
+
+/// Return [`Syscall`] variant descriminant
+impl From<Syscall> for usize {
+    fn from(syscall: Syscall) -> Self {
+        // We can use as because this value always correct and
+        // there's no many kinds of conversation, lossy conversions and
+        // dangerous coercions.
+        syscall as usize
+    }
 }
 
 /// [`do_syscall`], is called from trap.rs to invoke a system call. No discernment is
@@ -79,13 +110,13 @@ pub unsafe fn do_syscall(mepc: usize, frame: *mut TrapFrame) -> usize {
     // their lead.
     // A7 is X17, so it's register number 17.
     Syscall::try_from((*frame).regs[Registers::A7 as usize]).map_or_else(
-        |e| {
-            println!("Unknown syscall number {}", e.number);
+        |unexpected_syscall| {
+            println!("Unknown syscall number {}", unexpected_syscall);
             0
         },
         |syscall| {
             match syscall {
-                Syscall::Exit => {
+                Syscall::_Exit => {
                     delete_process((*frame).pid as u16);
                     0
                 },
@@ -322,7 +353,7 @@ fn do_make_syscall(
 }
 
 pub fn syscall_exit() {
-    let _ = do_make_syscall(Syscall::Exit.into(), 0, 0, 0, 0, 0, 0);
+    let _ = do_make_syscall(Syscall::_Exit as usize, 0, 0, 0, 0, 0, 0);
 }
 
 pub fn syscall_execv(path: *const u8, argv: usize) -> usize {
