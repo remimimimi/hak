@@ -371,5 +371,5 @@ pub mod block;
 pub mod gpu;
 /// Input device
 pub mod input;
-/// Rng device
+/// Range device
 pub mod rng;
