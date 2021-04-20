@@ -122,19 +122,35 @@ extern "C" fn kinit_hart(_hartid: usize) {
     // All non-0 harts initialize here.
 }
 
+/// Export riscv assembly files for bootloader and trap handler
 pub mod assembly;
+/// Buffer management stuff
 pub mod buffer;
+/// Riscv cpu instructions wrapper
 pub mod cpu;
+/// Elf binary format execution
 pub mod elf;
+/// Minix3 file system implementation
 pub mod fs;
+/// Kernel memory management
 pub mod kmem;
+/// Synchronization primitives
 pub mod lock;
+/// Paging and related functions implementation
 pub mod page;
+/// Programmable interrupt controller functionality
 pub mod plic;
+/// Process data
 pub mod process;
+/// Process scheduling
 pub mod sched;
+/// System calls
 pub mod syscall;
+/// First initalized process
 pub mod test;
+/// Trampoline for interrupts
 pub mod trap;
+/// Universal Asynchronous Receiver-Transmitter
 pub mod uart;
+/// Virtual input/output protocol
 pub mod virtio;
