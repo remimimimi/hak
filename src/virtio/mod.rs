@@ -365,7 +365,11 @@ pub fn handle_interrupt(interrupt: u32) {
     }
 }
 
+/// Block device
 pub mod block;
+/// Gpu device
 pub mod gpu;
+/// Input device
 pub mod input;
+/// Rng device
 pub mod rng;
