@@ -178,7 +178,7 @@ impl MinixFileSystem {
         }
     }
 
-    // Run this ONLY in a process!
+    /// NOTE: Run this ONLY in a process!
     pub fn init(bdev: usize) {
         if unsafe { MFS_INODE_CACHE[bdev - 1].is_none() } {
             let mut btm = BTreeMap::new();
@@ -488,9 +488,11 @@ impl MinixFileSystem {
     }
 }
 
-/// This is a wrapper function around the syscall_block_read. This allows me to do
-/// other things before I call the system call (or after). However, all the things I
-/// wanted to do are no longer there, so this is a worthless function.
+/// This is a wrapper function around the syscall_block_read.
+///
+/// This allows me to do other things before I call the system call (or after).
+/// However, all the things I wanted to do are no longer there, so this
+/// is a worthless function.
 fn syc_read(bdev: usize, buffer: *mut u8, size: u32, offset: u32) -> u8 {
     syscall_block_read(bdev, buffer, size, offset)
 }

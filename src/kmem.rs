@@ -250,7 +250,7 @@ unsafe impl GlobalAlloc for OsGlobalAlloc {
 /// Technically, we don't need the {} at the end, but it
 /// reveals that we're creating a new structure and not just
 /// copying a value.
-static GA: OsGlobalAlloc = OsGlobalAlloc {};
+static GA: OsGlobalAlloc = OsGlobalAlloc;
 
 #[alloc_error_handler]
 /// If for some reason [`GlobalAlloc::alloc()`] gets [`null_mut()`],
