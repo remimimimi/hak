@@ -7,6 +7,8 @@ use alloc::{
 };
 use core::ptr::null_mut;
 
+use spin::Mutex;
+
 use crate::{
     cpu::{
         build_satp,
@@ -18,7 +20,6 @@ use crate::{
         TrapFrame,
     },
     fs::Inode,
-    lock::Mutex,
     page::{
         alloc,
         dealloc,
@@ -52,7 +53,7 @@ pub const PROCESS_STARTING_ADDR: usize = 0x2000_0000;
 // a VecDeque at compile time, so we are somewhat forced to
 // do this.
 pub static mut PROCESS_LIST: Option<VecDeque<Process>> = None;
-pub static mut PROCESS_LIST_MUTEX: Mutex = Mutex::new();
+pub static mut PROCESS_LIST_MUTEX: Mutex<()> = Mutex::new(());
 // We can search through the process list to get a new PID, but
 // it's probably easier and faster just to increase the pid:
 pub static mut NEXT_PID: u16 = 1;
@@ -211,7 +212,7 @@ pub fn add_process_default(pr: fn()) {
         // then move ownership back to the PROCESS_LIST.
         // This allows mutual exclusion as anyone else trying to grab
         // the process list will get None rather than the Deque.
-        PROCESS_LIST_MUTEX.spin_lock();
+        PROCESS_LIST_MUTEX.lock();
         if let Some(mut pl) = PROCESS_LIST.take() {
             // .take() will replace PROCESS_LIST with None and give
             // us the only copy of the Deque.
@@ -222,7 +223,7 @@ pub fn add_process_default(pr: fn()) {
             // Some(pl).
             PROCESS_LIST.replace(pl);
         }
-        PROCESS_LIST_MUTEX.unlock();
+        PROCESS_LIST_MUTEX.force_unlock();
         // TODO: When we get to multi-hart processing, we need to keep
         // trying to grab the process list. We can do this with an
         // atomic instruction. but right now, we're a single-processor
@@ -284,7 +285,7 @@ pub fn add_kernel_process(func: fn()) -> u16 {
     unsafe { PROCESS_LIST.take() }.map_or_else(
         || {
             unsafe {
-                PROCESS_LIST_MUTEX.unlock();
+                PROCESS_LIST_MUTEX.force_unlock();
             }
             // TODO: When we get to multi-hart processing, we need to keep
             // trying to grab the process list. We can do this with an
@@ -327,7 +328,7 @@ pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
     // This allows mutual exclusion as anyone else trying to grab
     // the process list will get None rather than the Deque.
     unsafe {
-        PROCESS_LIST_MUTEX.spin_lock();
+        PROCESS_LIST_MUTEX.lock();
     }
     if let Some(mut pl) = unsafe { PROCESS_LIST.take() } {
         // .take() will replace PROCESS_LIST with None and give
@@ -377,12 +378,12 @@ pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
         // Some(pl).
         unsafe {
             PROCESS_LIST.replace(pl);
-            PROCESS_LIST_MUTEX.unlock();
+            PROCESS_LIST_MUTEX.force_unlock();
         }
         my_pid
     } else {
         unsafe {
-            PROCESS_LIST_MUTEX.unlock();
+            PROCESS_LIST_MUTEX.force_unlock();
         }
         // TODO: When we get to multi-hart processing, we need to keep
         // trying to grab the process list. We can do this with an
@@ -397,7 +398,7 @@ pub fn add_kernel_process_args(func: fn(args_ptr: usize), args: usize) -> u16 {
 /// but later, it should call the shell.
 pub fn init() -> usize {
     unsafe {
-        PROCESS_LIST_MUTEX.spin_lock();
+        PROCESS_LIST_MUTEX.lock();
         PROCESS_LIST = Some(VecDeque::with_capacity(15));
         // add_process_default(init_process);
         add_kernel_process(init_process);
@@ -412,7 +413,7 @@ pub fn init() -> usize {
         // println!("Init's frame is at 0x{:08x}", frame);
         // Put the process list back in the global.
         PROCESS_LIST.replace(pl);
-        PROCESS_LIST_MUTEX.unlock();
+        PROCESS_LIST_MUTEX.force_unlock();
         // Return the first instruction's address to execute.
         // Since we use the MMU, all start here.
         (*p).pc

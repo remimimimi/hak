@@ -63,6 +63,7 @@ use crate::{
     },
     elf,
     fs,
+    lock::SleepExt,
     page::{
         map,
         virt_to_phys,
@@ -479,7 +480,7 @@ fn exec_func(args: usize) {
                 proc_list.push_back(proc.ok().unwrap());
                 PROCESS_LIST.replace(proc_list);
             }
-            PROCESS_LIST_MUTEX.unlock();
+            PROCESS_LIST_MUTEX.force_unlock();
         }
     }
 }
