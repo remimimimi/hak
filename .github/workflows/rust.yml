@@ -20,7 +20,7 @@ jobs:
       # uses: Swatinem/rust-cache@a9bca6b5a60ce11e166697c7b09cfa308d92746a
       uses: Swatinem/rust-cache@v1.2.0
     - name: Set nightly Rust
-      run: rustup toolchain install nightly
+      run: rustup toolchain install nightly && rustup default nightly
     - name: Setup Rust target toolchain
       run:  rustup target add riscv64gc-unknown-none-elf && cargo install cargo-binutils
     - uses: actions/checkout@v2
