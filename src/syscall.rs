@@ -55,7 +55,6 @@ use alloc::{
 use core::convert::TryFrom;
 
 use crate::{
-    buffer::Buffer,
     cpu::{
         dump_registers,
         Registers,
@@ -90,6 +89,7 @@ use crate::{
             KEY_OBSERVERS,
         },
     },
+    Buffer,
 };
 
 /// Contain all supported system calls
@@ -463,10 +463,10 @@ fn exec_func(args: usize) {
         // we take control back here. The Box now owns the Inode and will complete
         // freeing the heap memory allocated for it.
         let inode = Box::from_raw(args as *mut fs::Inode);
-        let mut buffer = Buffer::new(inode.size as usize);
+        let mut buffer = Buffer::with_capacity(inode.size as usize);
         // This is why we need to be in a process context. The read() call may sleep as it
         // waits for the block driver to return.
-        fs::MinixFileSystem::read(8, &inode, buffer.get_mut(), inode.size, 0);
+        fs::MinixFileSystem::read(8, &inode, buffer.as_mut_ptr(), inode.size, 0);
         // Now we have the data, so the following will load the ELF file and give us a process.
         let proc = elf::File::load_proc(&buffer);
         if proc.is_err() {

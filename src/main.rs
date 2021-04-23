@@ -134,10 +134,13 @@ extern "C" fn kinit_hart(_hartid: usize) {
     // All non-0 harts initialize here.
 }
 
+/// Buffer of bytes
+pub type Buffer = alloc::vec::Vec<u8>;
+
 /// Export RISC-V assembly files for bootloader and trap handler
 pub mod assembly;
 /// Buffer management stuff
-pub mod buffer;
+// pub mod buffer;
 /// RISC-V cpu instructions wrapper
 pub mod cpu;
 /// Elf binary format execution

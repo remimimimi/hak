@@ -1,7 +1,6 @@
 use alloc::collections::VecDeque;
 
 use crate::{
-    buffer::Buffer,
     cpu::{
         build_satp,
         memcpy,
@@ -27,6 +26,7 @@ use crate::{
         STACK_ADDR,
         STACK_PAGES,
     },
+    Buffer,
 };
 // Every ELF file starts with ELF "magic", which is a sequence of four bytes 0x7f followed by
 // capital ELF, which is 0x45, 0x4c, and 0x46 respectively.
@@ -107,7 +107,7 @@ impl File {
         let elf_hdr;
         unsafe {
             // Load the ELF
-            elf_hdr = (buffer.get() as *const Header).as_ref().unwrap();
+            elf_hdr = (buffer.as_ptr() as *const Header).as_ref().unwrap();
         }
         // The ELF magic is 0x75, followed by ELF
         if elf_hdr.magic != MAGIC {
@@ -122,7 +122,7 @@ impl File {
         if elf_hdr.obj_type != TYPE_EXEC {
             return Err(LoadErrors::TypeExec);
         }
-        let ph_tab = unsafe { buffer.get().add(elf_hdr.phoff) } as *const ProgramHeader;
+        let ph_tab = unsafe { buffer.as_ptr().add(elf_hdr.phoff) } as *const ProgramHeader;
         // There are phnum number of program headers. We need to go through
         // each one and load it into memory, if necessary.
         let mut ret = Self {
@@ -142,9 +142,9 @@ impl File {
                 if ph.memsz == 0 {
                     continue;
                 }
-                let mut ph_buffer = Buffer::new(ph.memsz);
+                let mut ph_buffer = Buffer::with_capacity(ph.memsz);
 
-                memcpy(ph_buffer.get_mut(), buffer.get().add(ph.off), ph.memsz);
+                memcpy(ph_buffer.as_mut_ptr(), buffer.as_ptr().add(ph.off), ph.memsz);
                 ret.programs.push_back(Program {
                     header: *ph,
                     data: ph_buffer,
@@ -201,7 +201,7 @@ impl File {
             // program header tells us how many bytes will need to be loaded.
             // The ph.off is the offset to load this into.
             unsafe {
-                memcpy(program_mem.add(p.header.off), p.data.get(), p.header.memsz);
+                memcpy(program_mem.add(p.header.off), p.data.as_ptr(), p.header.memsz);
             }
             // We start off with the user bit set.
             let mut bits = EntryBits::User.val();

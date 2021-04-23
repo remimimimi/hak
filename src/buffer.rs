@@ -1,88 +1,62 @@
-use core::{
-    ops::{
-        Index,
-        IndexMut,
-    },
-    ptr::null_mut,
+use alloc::boxed::Box;
+use core::ops::{
+    Index,
+    IndexMut,
 };
 
-use crate::{
-    cpu::memcpy,
-    kmem::{
-        kfree,
-        kmalloc,
-    },
-};
 // We need a Buffer that can automatically be created and destroyed
 // in the lifetime of our read and write functions. In C, this would entail
 // goto statements that "unravel" all of the allocations that we made. Take
 // a look at the read() function to see why I thought this way would be better.
-pub struct Buffer {
-    buffer: *mut u8,
-    len: usize,
+pub struct Buffer<const SIZE: usize> {
+    buffer: Box<[u8; SIZE]>,
 }
 
-impl Buffer {
-    pub fn new(sz: usize) -> Self {
+impl<const SIZE: usize> Buffer<SIZE> {
+    /// Allocate new zeroed buffer
+    pub fn new() -> Self {
         Self {
-            buffer: kmalloc(sz),
-            len: sz,
+            buffer: Box::new([0; SIZE]),
         }
     }
 
-    pub fn get_mut(&mut self) -> *mut u8 {
-        self.buffer
+    pub fn get_mut(&mut self) -> &mut Box<[u8; SIZE]> {
+        &mut self.buffer
     }
 
-    pub const fn get(&self) -> *const u8 {
-        self.buffer
+    pub const fn get(&self) -> &Box<[u8; SIZE]> {
+        &self.buffer
     }
 
     pub const fn len(&self) -> usize {
-        self.len
+        self.buffer.len()
     }
 }
 
-impl Default for Buffer {
+impl<const SIZE: usize> Default for Buffer<SIZE> {
     fn default() -> Self {
-        Self::new(1024)
+        Self::new()
     }
 }
 
-impl Index<usize> for Buffer {
+impl<const SIZE: usize> Index<usize> for Buffer<SIZE> {
     type Output = u8;
 
     fn index(&self, idx: usize) -> &Self::Output {
-        unsafe { self.get().add(idx).as_ref().unwrap() }
+        unsafe { self.get().as_ptr().add(idx).as_ref().unwrap() }
     }
 }
 
-impl IndexMut<usize> for Buffer {
+impl<const SIZE: usize> IndexMut<usize> for Buffer<SIZE> {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        unsafe { self.get_mut().add(idx).as_mut().unwrap() }
+        unsafe { self.get_mut().as_mut_ptr().add(idx).as_mut().unwrap() }
     }
 }
 
-impl Clone for Buffer {
+impl<const SIZE: usize> Clone for Buffer<SIZE> {
     fn clone(&self) -> Self {
-        let mut new = Self {
-            buffer: kmalloc(self.len()),
-            len: self.len(),
-        };
-        unsafe {
-            memcpy(new.get_mut(), self.get(), self.len());
-        }
-        new
-    }
-}
-
-// This is why we have the Buffer. Instead of having to unwind
-// all other buffers, we drop here when the block buffer goes out of scope.
-impl Drop for Buffer {
-    fn drop(&mut self) {
-        if !self.buffer.is_null() {
-            kfree(self.buffer);
-            self.buffer = null_mut();
+        Self {
+            buffer: self.buffer.clone(),
         }
     }
 }
