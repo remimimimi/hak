@@ -1,4 +1,4 @@
-# `romlin`
+# `Terrikon`
 
 New type operating system
 
